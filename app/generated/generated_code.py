@@ -1,4 +1,3 @@
-```python
 def execute_command(image_path, image):
     image_patch = ImagePatch(image)
     
@@ -11,10 +10,8 @@ def execute_command(image_path, image):
     
     # Verify if the count matches the condition
     required_num = 6
-    if num_strawberries == required_num:
-        anomaly_score = 0
-    else:
+    anomaly_score = 0
+    if num_strawberries != required_num:
         anomaly_score = 1
-    
+        
     return formatting_answer(anomaly_score)
-```

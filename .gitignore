@@ -1,1 +1,3 @@
 /.venv
+/app/generated_code.py
+/app/generated/

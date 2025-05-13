@@ -97,21 +97,21 @@ def generate_anomaly_detection_code(normal_conditions: str) -> str:  # text: str
         # 生成されたコードをログに出力（デバッグ用）
         print(f"生成されたコード: {code[:100]}...")
         
+        code = code.replace("```", "")  # 不要なバッククォートを削除
+        function_definitions = code.split("def ")  # 関数ごとに分割
+        final_funciton = "def " + function_definitions[1]
+
         # 生成されたコードをファイルに保存
         save_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "generated")
         os.makedirs(save_dir, exist_ok=True)
         
         with open(os.path.join(save_dir, "generated_code.py"), "w", encoding="utf-8") as o:
-            o.write(code)
+            o.write(final_funciton)
             
         # アプリのルートディレクトリにも保存
         with open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "generated_code.py"), "w", encoding="utf-8") as o:
-            o.write(code)
+            o.write(final_funciton)
             
-        code = code.replace("```", "")  # 不要なバッククォートを削除
-        function_definitions = code.split("def ")  # 関数ごとに分割
-        final_funciton = "def " + function_definitions[1]
-
         return final_funciton
         
     except Exception as e:
