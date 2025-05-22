@@ -1,4 +1,4 @@
-# AIプログラム生成アプリ
+# AIによる異常検知プログラム生成・実行アプリ
 
 このアプリケーションは、テキスト入力に基づいてAIがプログラムを生成するWebアプリケーションです。Anthropic APIを使用して、入力されたテキストとテンプレートプロンプトを組み合わせてプログラムコードを生成します。
 URL: https://takah1r0jp-streamlit-ad-app-appmain-ghw67a.streamlit.app/
