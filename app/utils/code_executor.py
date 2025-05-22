@@ -528,16 +528,13 @@ def delete_overlaps(patch_list1, patch_list2):
     for p1 in patch_list1:
         for p2 in patch_list2:
             iou = cal_iou(p1.box, p2.box)
-            print("iou", iou)
 
             if iou > 0.5:
-                print("Overlap!")
                 if p1.detection_score > p2.detection_score:
                     patch_list2.remove(p2)
                 else:
                     patch_list1.remove(p1)
 
-    print(patch_list1, patch_list2)
     return patch_list1, patch_list2
 
 

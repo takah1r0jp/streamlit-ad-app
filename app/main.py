@@ -181,5 +181,5 @@ st.markdown("---")
 st.markdown("© 2025 AIプログラム生成アプリ")
 
 # アプリ実行コマンド
-# streamlit run backend/app/main.py
+# streamlit run app/main.py
 
