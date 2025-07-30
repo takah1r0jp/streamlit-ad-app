@@ -17,7 +17,7 @@ st.set_page_config(
 # タイトルとアプリの説明
 st.title("AI異常検知プログラム生成アプリ")
 st.markdown("""
-このアプリは、テキスト入力に基づいてAIがプログラムを生成します。
+このアプリは、テキスト入力に基づいてAIがプログラムを生成します。\n
 Anthropic APIを使用して、入力されたテキストとテンプレートプロンプトを組み合わせて
 プログラムを生成します。
 """)
@@ -34,6 +34,8 @@ if 'uploaded_image_path' not in st.session_state:
         st.session_state.uploaded_image_path = None
 if 'execution_result' not in st.session_state:
     st.session_state.execution_result = None
+if 'normal_conditions' not in st.session_state:
+    st.session_state.normal_conditions = [""]
 
 # サイドバーにAPIキー入力欄を追加
 with st.sidebar:
@@ -43,11 +45,6 @@ with st.sidebar:
         os.environ["ANTHROPIC_API_KEY"] = api_key
     else:
         st.warning("APIキーを入力してください")
-    
-    st.markdown("---")
-    st.markdown("### テンプレートプロンプト情報")
-    if st.checkbox("テンプレートプロンプトを表示"):
-        st.code(prompt[:500] + "...", language="python")
 
 # メイン画面
 col1, col2 = st.columns(2)
@@ -74,19 +71,44 @@ with col1:
             f.write(uploaded_file.getbuffer())
         st.session_state.uploaded_image_path = temp_file_path
     
-    user_input = st.text_area(
-        "プログラム生成のための正常品条件を入力してください",
-        height=200,
-        placeholder="例: 画像に2つのリンゴがあること"
-    )
+    # 複数の正常品条件入力
+    st.subheader("正常品条件")
     
-    generate_button = st.button("プログラム生成", type="primary", disabled=not api_key)
+    # 各条件の入力フィールド
+    for i, condition in enumerate(st.session_state.normal_conditions):
+        st.session_state.normal_conditions[i] = st.text_area(
+            f"正常品条件 {i + 1}",
+            value=condition,
+            height=100,
+            placeholder="例: 画像に2つのリンゴがあること",
+            key=f"condition_{i}"
+        )
+    
+    # 条件の追加・削除ボタン
+    col_add, col_remove = st.columns([1, 1])
+    with col_add:
+        if st.button("➕ 条件を追加", use_container_width=True):
+            st.session_state.normal_conditions.append("")
+            st.rerun()
+    with col_remove:
+        if st.button("➖ 条件を削除", use_container_width=True) and len(st.session_state.normal_conditions) > 1:
+            st.session_state.normal_conditions.pop()
+            st.rerun()
+    
+    # すべての条件が入力されているかチェック
+    valid_conditions = [c.strip() for c in st.session_state.normal_conditions if c.strip()]
+    has_valid_input = len(valid_conditions) > 0
+    
+    generate_button = st.button("プログラム生成", type="primary", disabled=not (api_key and has_valid_input))
     
 # 生成処理
-if generate_button and user_input:
+if generate_button and has_valid_input:
+    # 複数の条件を結合してプロンプトを作成
+    combined_conditions = "\n".join([f"- {condition.strip()}" for condition in valid_conditions])
+    
     with st.spinner("AIがプログラムを生成中..."):
         try:
-            st.session_state.generated_code = generate_anomaly_detection_code(user_input)
+            st.session_state.generated_code = generate_anomaly_detection_code(combined_conditions)
             st.success("プログラムの生成が完了しました！")
         except Exception as e:
             st.error(f"エラーが発生しました: {str(e)}")
@@ -98,6 +120,7 @@ if generate_button and user_input:
 with col2:
     st.header("生成されたプログラム")
     if st.session_state.generated_code:
+        # コードを表示
         st.code(st.session_state.generated_code, language="python")
         
         # コードのダウンロードボタン

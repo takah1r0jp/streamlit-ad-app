@@ -1,3 +1,97 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
 /.venv
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Environments and secrets
+.env.local
+.env.*.local
+*.key
+.secrets
+config.json
+
+# API Keys (ensure these are never committed)
+*api_key*
+*API_KEY*
+.anthropic_key
+.openai_key
+
+# Generated files
 /app/generated_code.py
 /app/generated/
+generated_*.py
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Model downloads and cache
+.cache/
+models/
+*.bin
+*.safetensors
+*.onnx
+
+# Docker
+.dockerignore
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Claude Code documentation
+CLAUDE.md
