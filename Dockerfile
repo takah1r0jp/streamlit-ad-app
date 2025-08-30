@@ -2,15 +2,20 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 必要なパッケージをインストール
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /usr/local/bin/
 
-# アプリケーションコードをコピー
+# Copy project files
+COPY pyproject.toml uv.lock* ./
+
+# Install dependencies
+RUN uv sync --frozen --no-cache
+
+# Copy application code
 COPY . .
 
-# ポートを公開
+# Expose port
 EXPOSE 8501
 
-# Streamlitアプリを起動
-CMD ["streamlit", "run", "app/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Run Streamlit app
+CMD ["uv", "run", "streamlit", "run", "app/main.py", "--server.port=8501", "--server.address=0.0.0.0"]
