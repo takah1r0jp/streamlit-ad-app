@@ -561,14 +561,29 @@ def delete_large_box(patch_list):
     return new_patch_list
 
 
+# グローバルモデルキャッシュ
+_cached_model = None
+_cached_processor = None
+
 def detect(image, obj_name):  # list(scoreの高い順にbboxを返す)
+    global _cached_model, _cached_processor
+    
     # load model
-    model_id = "IDEA-Research/grounding-dino-base"
+    model_id = "IDEA-Research/grounding-dino-tiny"
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     try:
-        processor = AutoProcessor.from_pretrained(model_id)
-        model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
+        # モデルキャッシュを使用
+        if _cached_processor is None or _cached_model is None:
+            logger.info("Loading model for first time...")
+            _cached_processor = AutoProcessor.from_pretrained(model_id)
+            _cached_model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(device)
+            logger.info("Model loaded and cached")
+        else:
+            logger.info("Using cached model")
+            
+        processor = _cached_processor
+        model = _cached_model
 
         # orange. peach. のような複数のオブジェクト名を入力とする
         if not obj_name.endswith("."):
