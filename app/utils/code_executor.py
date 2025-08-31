@@ -20,13 +20,14 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def execute_code(code, image_path=None):
+def execute_code(code, image_path=None, box_threshold=0.3):
     """
     生成されたコードを実行し、画像が条件を満たしているかどうかを判定する
     
     Args:
         code (str): 実行するPythonコード
         image_path (str, optional): 画像ファイルのパス。指定されていない場合はデフォルト画像を使用
+        box_threshold (float, optional): 物体検出のしきい値。デフォルトは0.3
         
     Returns:
         dict: 実行結果のメッセージを含む辞書
@@ -57,7 +58,7 @@ def execute_code(code, image_path=None):
         
         logger.info("コードを実行中...")
         # 関数の実行，正常：０，異常：1
-        anomaly_score, output_text = execute_function_from_code(final_function, function_name, image_path, image)
+        anomaly_score, output_text = execute_function_from_code(final_function, function_name, image_path, image, box_threshold)
         
         # anomaly_scoreがint型じゃなければエラー通知
         if not isinstance(anomaly_score, (int)):
@@ -77,7 +78,7 @@ def execute_code(code, image_path=None):
 
 
 # 生成されたコードの中から対象の関数を一つ実行する関数
-def execute_function_from_code(code, func_name, image_path, image):
+def execute_function_from_code(code, func_name, image_path, image, box_threshold=0.3):
     """指定された関数をコードから実行し、異常スコアとテキスト出力を取得"""
     import builtins
     namespace = {}
@@ -104,6 +105,8 @@ def execute_function_from_code(code, func_name, image_path, image):
         builtins.print = capture_print
         
         # `exec` の影響範囲を限定するため `namespace` を使用
+        # box_thresholdをグローバル変数として設定
+        globals()['_box_threshold'] = box_threshold
         exec(code, globals(), namespace)
 
         # 実行されたコードの中から `func_name` に対応する関数を取得
@@ -594,10 +597,11 @@ def detect(image, obj_name):  # list(scoreの高い順にbboxを返す)
         with torch.no_grad():
             outputs = model(**inputs)
 
-        # thresholdの選択
-        box_threshold = 0.3
+        # thresholdの選択（グローバル変数から取得、なければデフォルト0.3）
+        box_threshold = globals().get('_box_threshold', 0.3)
+        logger.info(f"使用するしきい値: {box_threshold}")
         if obj_name == "pushpin.":
-            box_threshold = 0.3
+            box_threshold = max(box_threshold, 0.3)  # pushpinの場合は最低0.3を保持
 
         results = processor.post_process_grounded_object_detection(
             outputs, inputs.input_ids, box_threshold=box_threshold, text_threshold=0.3, target_sizes=[image.size[::-1]]

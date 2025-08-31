@@ -45,6 +45,17 @@ with st.sidebar:
         os.environ["ANTHROPIC_API_KEY"] = api_key
     else:
         st.warning("APIキーを入力してください")
+    
+    # 物体検出モデルのしきい値設定
+    st.subheader("物体検出設定")
+    box_threshold = st.slider(
+        "検出しきい値",
+        min_value=0.1,
+        max_value=0.9,
+        value=0.3,
+        step=0.1,
+        help="物体検出の信頼度しきい値。高い値ほど厳しい検出になります。"
+    )
 
 # メイン画面
 col1, col2 = st.columns(2)
@@ -164,7 +175,8 @@ with col2:
                 
                 st.session_state.execution_result = execute_code(
                     st.session_state.generated_code,
-                    image_path
+                    image_path,
+                    box_threshold
                 )
                 st.success("プログラムの実行が完了しました！")
                 # 実行フラグをリセット
