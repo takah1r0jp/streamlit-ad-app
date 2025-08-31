@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: 54.206.62.35
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /home/ec2-user/streamlit-ad-app
+          git pull origin main
+          docker stop streamlit-ad-app-container || true
+          docker rm streamlit-ad-app-container || true
+          docker build -t streamlit-ad-app .
+          docker run -d -p 8501:8501 -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" --name streamlit-ad-app-container streamlit-ad-app
+          echo "Deployment completed successfully"
