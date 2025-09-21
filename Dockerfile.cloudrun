@@ -23,8 +23,13 @@ FROM python:3.11-slim
 
 # 必要な実行時依存関係のみインストール
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -44,8 +49,8 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PORT=8501
 EXPOSE 8501
 
-# ヘルスチェック用エンドポイント
-HEALTHCHECK --interval=30s --timeout=30s --start-period=60s --retries=3 \
+# ヘルスチェック用エンドポイント（軽量化）
+HEALTHCHECK --interval=60s --timeout=10s --start-period=120s --retries=2 \
     CMD curl -f http://localhost:8501/_stcore/health || exit 1
 
 # Streamlit設定を最適化
