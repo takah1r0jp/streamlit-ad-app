@@ -60,3 +60,4 @@ export ANTHROPIC_API_KEY="your_api_key_here"
 - **AI**: Anthropic Claude API
 - **物体検出**: Grounding DINO (Hugging Face)
 - **画像処理**: PIL, PyTorch
+# CI trigger for permission fix
