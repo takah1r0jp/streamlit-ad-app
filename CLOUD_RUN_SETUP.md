@@ -42,8 +42,9 @@ GitHubリポジトリの Settings > Secrets and variables > Actions で以下を
 ```
 GCP_PROJECT_ID: YOUR_PROJECT_ID
 GCP_SA_KEY: key.json の内容をそのまま貼り付け
-ANTHROPIC_API_KEY: あなたのAnthropic APIキー
 ```
+
+注意: Anthropic APIキーは環境変数として不要になりました（ユーザーがUI上で入力）
 
 ### 3. Cloudflare DNS設定
 

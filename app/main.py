@@ -234,7 +234,7 @@ if generate_button and conditions_valid:
     
     with st.spinner("🤖 AIがプログラムを生成中..."):
         try:
-            st.session_state.generated_code = generate_anomaly_detection_code(combined_conditions)
+            st.session_state.generated_code = generate_anomaly_detection_code(combined_conditions, api_key)
             st.success("✅ プログラム生成完了！")
             st.rerun()
         except Exception as e:

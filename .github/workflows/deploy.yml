@@ -47,9 +47,6 @@ jobs:
           docker build -f Dockerfile.cloudrun -t "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/app:$GITHUB_SHA" ./
           docker push "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/app:$GITHUB_SHA"
 
-      - name: Create API key secret (if not exists)
-        run: |
-          echo -n "${{ secrets.ANTHROPIC_API_KEY }}" | gcloud secrets create anthropic-api-key --data-file=- || true
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -68,7 +65,6 @@ jobs:
             --concurrency=5
             --timeout=600
             --set-env-vars=PORT=8501
-            --set-secrets=ANTHROPIC_API_KEY=anthropic-api-key:latest
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
