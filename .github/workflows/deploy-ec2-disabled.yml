@@ -1,0 +1,50 @@
+# EC2デプロイワークフロー（無効化済み）
+# Cloud Runへの移行により無効化
+# 履歴参照用として保持
+
+name: Deploy to EC2 (DISABLED)
+
+on:
+  # 自動トリガーを無効化
+  # push:
+  #   branches: [main]
+  workflow_dispatch:  # 手動実行のみ（緊急時用）
+    inputs:
+      confirm:
+        description: 'Type "confirm" to enable EC2 deployment'
+        required: true
+        default: ''
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'confirm'  # 確認が必要
+
+    steps:
+    - name: Warning Message
+      run: |
+        echo "⚠️  WARNING: EC2 deployment is disabled"
+        echo "💡 Current deployment: Cloud Run"
+        echo "📝 Setup guide: CLOUD_RUN_SETUP.md"
+        exit 1  # 実行を停止
+
+    # 以下は参照用（実行されない）
+    - name: Checkout code (DISABLED)
+      if: false
+      uses: actions/checkout@v3
+
+    - name: Deploy to EC2 (DISABLED)
+      if: false
+      uses: appleboy/ssh-action@v0.1.5
+      with:
+        host: 54.206.62.35
+        username: ec2-user
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          cd /home/ec2-user/streamlit-ad-app
+          git pull origin main
+          docker stop streamlit-ad-app-container || true
+          docker rm streamlit-ad-app-container || true
+          docker build -t streamlit-ad-app .
+          docker run -d -p 8501:8501 -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" --name streamlit-ad-app-container streamlit-ad-app
+          echo "Deployment completed successfully"
