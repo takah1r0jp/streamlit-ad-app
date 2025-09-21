@@ -45,8 +45,7 @@ COPY . .
 # 環境変数でPythonパスを設定
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Cloud Run用の設定
-ENV PORT=8501
+# Cloud Run用の設定（PORTは自動設定される）
 EXPOSE 8501
 
 # ヘルスチェック用エンドポイント（軽量化）
@@ -57,5 +56,5 @@ HEALTHCHECK --interval=60s --timeout=10s --start-period=120s --retries=2 \
 RUN mkdir -p /root/.streamlit && \
     echo '[server]\nport = 8501\naddress = "0.0.0.0"\nheadless = true\n[browser]\ngatherUsageStats = false\n[theme]\nbase = "light"' > /root/.streamlit/config.toml
 
-# 実行コマンド
-CMD ["python", "-m", "streamlit", "run", "app/main.py", "--server.port=8501", "--server.address=0.0.0.0", "--server.headless=true"]
+# 実行コマンド（Cloud RunのPORT環境変数を使用）
+CMD ["sh", "-c", "python -m streamlit run app/main.py --server.port=${PORT:-8501} --server.address=0.0.0.0 --server.headless=true"]

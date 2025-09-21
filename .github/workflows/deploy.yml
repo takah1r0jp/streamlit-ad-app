@@ -64,7 +64,6 @@ jobs:
             --max-instances=3
             --concurrency=5
             --timeout=600
-            --set-env-vars=PORT=8501
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}

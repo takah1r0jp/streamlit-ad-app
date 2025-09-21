@@ -24,9 +24,7 @@ spec:
         ports:
         - name: http1
           containerPort: 8501
-        env:
-        - name: PORT
-          value: "8501"
+        # env: PORT is automatically set by Cloud Run
         resources:
           limits:
             cpu: "1"                    # 1vCPU制限
