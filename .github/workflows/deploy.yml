@@ -1,29 +1,74 @@
-name: Deploy to EC2
+name: Deploy to Cloud Run
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: asia-northeast1
+  REPOSITORY: streamlit-ad-app
+  SERVICE: streamlit-ad-app
+  REGION: asia-northeast1
+
 jobs:
   deploy:
+    permissions:
+      contents: read
+      id-token: write
+
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-    
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v0.1.5
-      with:
-        host: 54.206.62.35
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          cd /home/ec2-user/streamlit-ad-app
-          git pull origin main
-          docker stop streamlit-ad-app-container || true
-          docker rm streamlit-ad-app-container || true
-          docker build -t streamlit-ad-app .
-          docker run -d -p 8501:8501 -e ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" --name streamlit-ad-app-container streamlit-ad-app
-          echo "Deployment completed successfully"
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: Configure Docker to use gcloud
+        run: gcloud auth configure-docker $GAR_LOCATION-docker.pkg.dev
+
+      - name: Create Artifact Registry repository (if not exists)
+        run: |
+          gcloud artifacts repositories create $REPOSITORY \
+            --repository-format=docker \
+            --location=$GAR_LOCATION \
+            --description="Docker repository for Streamlit AD App" || true
+
+      - name: Build and Push Container
+        run: |-
+          docker build -f Dockerfile.cloudrun -t "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/app:$GITHUB_SHA" ./
+          docker push "$GAR_LOCATION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/app:$GITHUB_SHA"
+
+      - name: Create API key secret (if not exists)
+        run: |
+          echo -n "${{ secrets.ANTHROPIC_API_KEY }}" | gcloud secrets create anthropic-api-key --data-file=- || true
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/app:${{ github.sha }}
+          flags: |
+            --allow-unauthenticated
+            --service-account=cloud-run-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+            --memory=2Gi
+            --cpu=1
+            --min-instances=0
+            --max-instances=3
+            --concurrency=5
+            --timeout=600
+            --set-env-vars=PORT=8501
+            --set-secrets=ANTHROPIC_API_KEY=anthropic-api-key:latest
+
+      - name: Show Output
+        run: echo ${{ steps.deploy.outputs.url }}

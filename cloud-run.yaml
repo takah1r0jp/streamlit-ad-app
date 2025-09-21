@@ -1,0 +1,65 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: streamlit-ad-app
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        # コスト最適化設定（物体検出モデル対応）
+        autoscaling.knative.dev/minScale: "0"          # 未使用時は0インスタンス
+        autoscaling.knative.dev/maxScale: "3"          # 最大3インスタンス
+        run.googleapis.com/cpu-throttling: "false"     # CPU常時利用（モデル処理のため）
+        run.googleapis.com/startup-cpu-boost: "true"   # 起動時CPU向上
+        run.googleapis.com/memory: "2Gi"               # 物体検出モデル用メモリ
+        run.googleapis.com/cpu: "1"                    # 1vCPU（モデル処理用）
+    spec:
+      containerConcurrency: 5                          # 同時リクエスト数制限（重い処理のため）
+      timeoutSeconds: 600                              # タイムアウト10分（初回モデルロード対応）
+      containers:
+      - image: asia-northeast1-docker.pkg.dev/PROJECT_ID/streamlit-ad-app/app:latest
+        ports:
+        - name: http1
+          containerPort: 8501
+        env:
+        - name: ANTHROPIC_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: anthropic-api-key
+              key: api-key
+        - name: PORT
+          value: "8501"
+        resources:
+          limits:
+            cpu: "1"                    # 1vCPU制限
+            memory: "2Gi"               # 2GB RAM制限
+          requests:
+            cpu: "0.5"                  # 最小0.5vCPU
+            memory: "1Gi"               # 最小1GB（モデルロード用）
+        # ヘルスチェック設定
+        livenessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 120      # モデルロード時間を考慮
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+        startupProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 12          # 起動に最大2分を許可
