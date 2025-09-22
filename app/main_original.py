@@ -6,9 +6,6 @@ from PIL import Image
 from utils.code_executor import check_memory_usage, execute_code
 from utils.code_generator import generate_anomaly_detection_code
 
-# セキュリティモジュールのインポート
-from security import SecureSessionManager, IsolatedSessionState
-
 # ページ設定
 st.set_page_config(
     page_title="AI異常検知プログラム生成アプリ", page_icon="🤖", layout="wide"
@@ -65,39 +62,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# セキュリティ初期化
-@st.cache_resource
-def initialize_security():
-    """セキュリティマネージャーを初期化"""
-    return SecureSessionManager()
-
-# セキュリティマネージャーの取得
-security_manager = initialize_security()
-
-# 分離されたセッション状態の初期化
-try:
-    isolated_state = IsolatedSessionState(security_manager)
-    # 古いグローバル状態から新しい分離状態への移行
-    isolated_state.migrate_from_global_state()
-except Exception as e:
-    st.error(f"セキュリティ初期化エラー: {e}")
-    st.stop()
-
 # タイトル
-st.title("🔐 セキュア AI異常検知プログラム生成")
+st.title("🤖 AI異常検知プログラム生成")
 st.markdown("**5つのステップで簡単に異常検知プログラムを生成・実行**")
-
-# セキュリティ状態の表示（デバッグモード）
-if st.checkbox("🔍 セキュリティ情報を表示", key="debug_security"):
-    with st.expander("セキュリティ状態"):
-        security_info = security_manager.get_session_info()
-        session_summary = isolated_state.get_session_summary()
-
-        col_sec1, col_sec2 = st.columns(2)
-        with col_sec1:
-            st.json(security_info)
-        with col_sec2:
-            st.json(session_summary)
 
 
 # メモリ使用状況の表示
@@ -114,13 +81,24 @@ def show_memory_status():
 
 show_memory_status()
 
-# セッション状態の初期化（セキュア版）
-# デフォルト画像パスの設定
-default_image_path = os.path.join(
-    os.path.dirname(__file__), "utils", "apple_strawberry.png"
-)
-if os.path.exists(default_image_path) and not isolated_state.get_uploaded_image_path():
-    isolated_state.set_uploaded_image_path(default_image_path)
+# セッション状態の初期化
+if "generated_code" not in st.session_state:
+    st.session_state.generated_code = ""
+if "uploaded_image_path" not in st.session_state:
+    # デフォルトでapple_strawberry.pngを使用
+    default_image_path = os.path.join(
+        os.path.dirname(__file__), "utils", "apple_strawberry.png"
+    )
+    if os.path.exists(default_image_path):
+        st.session_state.uploaded_image_path = default_image_path
+    else:
+        st.session_state.uploaded_image_path = None
+if "execution_result" not in st.session_state:
+    st.session_state.execution_result = None
+if "normal_conditions" not in st.session_state:
+    st.session_state.normal_conditions = [""]
+if "box_threshold" not in st.session_state:
+    st.session_state.box_threshold = 0.3
 
 
 # ステップの完了状態を判定する関数
@@ -161,14 +139,14 @@ def get_step_status(step_num, api_key, image_exists, conditions_valid, code_exis
 # メイン3カラムレイアウト
 col1, col2, col3 = st.columns([1, 1.2, 1])
 
-# セキュアなAPIキーの取得と状態確認
-api_key = security_manager.get_api_key() or ""
-uploaded_path = isolated_state.get_uploaded_image_path()
-image_exists = uploaded_path and os.path.exists(uploaded_path)
-normal_conditions = isolated_state.get_normal_conditions()
-valid_conditions = [c.strip() for c in normal_conditions if c.strip()]
+# APIキーの取得
+api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+image_exists = st.session_state.uploaded_image_path and os.path.exists(
+    st.session_state.uploaded_image_path
+)
+valid_conditions = [c.strip() for c in st.session_state.normal_conditions if c.strip()]
 conditions_valid = len(valid_conditions) > 0
-code_exists = bool(isolated_state.get_generated_code())
+code_exists = bool(st.session_state.generated_code)
 
 # 左カラム（ステップ1-3）
 with col1:
@@ -189,21 +167,16 @@ with col1:
     )
 
     new_api_key = st.text_input(
-        "Anthropic APIキーを入力", type="password", value=api_key, key="api_input_secure"
+        "Anthropic APIキーを入力", type="password", value=api_key, key="api_input"
     )
     if new_api_key != api_key:
-        # セキュアなAPIキー保存（環境変数は使用しない）
-        if security_manager.set_api_key(new_api_key):
-            st.success("🔐 APIキーが安全に保存されました")
-            st.rerun()
-        else:
-            st.error("❌ APIキーの保存に失敗しました")
+        os.environ["ANTHROPIC_API_KEY"] = new_api_key
+        st.rerun()
 
     if not new_api_key:
         st.warning("⚠️ APIキーを入力してください")
-        st.info("🔒 APIキーはセッション内でのみ暗号化保存されます")
     else:
-        st.success("✅ APIキーが安全に設定されました")
+        st.success("✅ APIキーが設定されました")
 
     # ステップ2: 画像選択
     step2_status = get_step_status(
@@ -222,25 +195,23 @@ with col1:
     )
 
     # 現在の画像の小さな表示
-    current_path = isolated_state.get_uploaded_image_path()
-    if current_path and os.path.exists(current_path):
-        current_image = Image.open(current_path)
+    if st.session_state.uploaded_image_path and os.path.exists(
+        st.session_state.uploaded_image_path
+    ):
+        current_image = Image.open(st.session_state.uploaded_image_path)
         st.image(current_image, caption="現在の画像", width=200)
 
     uploaded_file = st.file_uploader(
-        "画像をアップロード（デフォルト画像も利用可能）", type=["png", "jpg", "jpeg"], key="image_upload_secure"
+        "画像をアップロード（デフォルト画像も利用可能）", type=["png", "jpg", "jpeg"]
     )
     if uploaded_file is not None:
-        # セキュアなファイル保存
-        try:
-            secure_file_path = security_manager.get_secure_file_path(uploaded_file.name)
-            with open(secure_file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            isolated_state.set_uploaded_image_path(secure_file_path)
-            st.success("✅ 画像が安全にアップロードされました")
-            st.rerun()
-        except Exception as e:
-            st.error(f"❌ 画像アップロードエラー: {e}")
+        temp_dir = tempfile.mkdtemp()
+        temp_file_path = os.path.join(temp_dir, uploaded_file.name)
+        with open(temp_file_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.session_state.uploaded_image_path = temp_file_path
+        st.success("✅ 画像がアップロードされました")
+        st.rerun()
 
 # 中央カラム（ステップ3）
 with col2:
@@ -260,40 +231,28 @@ with col2:
         unsafe_allow_html=True,
     )
 
-    # 条件入力（高さを制限）- セキュア版
-    current_conditions = isolated_state.get_normal_conditions()
-    updated_conditions = []
-
-    for i, condition in enumerate(current_conditions):
-        updated_condition = st.text_area(
+    # 条件入力（高さを制限）
+    for i, condition in enumerate(st.session_state.normal_conditions):
+        st.session_state.normal_conditions[i] = st.text_area(
             f"条件 {i + 1}",
             value=condition,
             height=80,
             placeholder="例: 画像に2つのリンゴがあること",
-            key=f"condition_secure_{i}",
+            key=f"condition_{i}",
         )
-        updated_conditions.append(updated_condition)
-
-    # 条件が変更された場合、セキュアストレージに保存
-    if updated_conditions != current_conditions:
-        isolated_state.set_normal_conditions(updated_conditions)
 
     # 条件の追加・削除（コンパクト）
     col_add, col_remove = st.columns([1, 1])
     with col_add:
-        if st.button("➕ 追加", use_container_width=True, key="add_condition_secure"):
-            new_conditions = isolated_state.get_normal_conditions()
-            new_conditions.append("")
-            isolated_state.set_normal_conditions(new_conditions)
+        if st.button("➕ 追加", use_container_width=True):
+            st.session_state.normal_conditions.append("")
             st.rerun()
     with col_remove:
         if (
-            st.button("➖ 削除", use_container_width=True, key="remove_condition_secure")
-            and len(isolated_state.get_normal_conditions()) > 1
+            st.button("➖ 削除", use_container_width=True)
+            and len(st.session_state.normal_conditions) > 1
         ):
-            new_conditions = isolated_state.get_normal_conditions()
-            new_conditions.pop()
-            isolated_state.set_normal_conditions(new_conditions)
+            st.session_state.normal_conditions.pop()
             st.rerun()
 
     if conditions_valid:
@@ -317,19 +276,15 @@ with col3:
         unsafe_allow_html=True,
     )
 
-    # 物体検出設定（コンパクト）- セキュア版
-    current_threshold = isolated_state.get_box_threshold()
-    new_threshold = st.slider(
+    # 物体検出設定（コンパクト）
+    st.session_state.box_threshold = st.slider(
         "検出しきい値",
         0.1,
         0.9,
-        current_threshold,
+        st.session_state.box_threshold,
         0.1,
         help="物体検出の信頼度",
-        key="threshold_secure",
     )
-    if new_threshold != current_threshold:
-        isolated_state.set_box_threshold(new_threshold)
 
     generate_button = st.button(
         "🚀 プログラム生成",
@@ -366,33 +321,27 @@ if generate_button and conditions_valid:
 
     with st.spinner("🤖 AIがプログラムを生成中..."):
         try:
-            # セキュアなAPIキー取得
-            secure_api_key = security_manager.get_api_key()
-            if not secure_api_key:
-                st.error("❌ APIキーが設定されていません")
-            else:
-                generated_code = generate_anomaly_detection_code(
-                    combined_conditions, secure_api_key
-                )
-                isolated_state.set_generated_code(generated_code)
-                st.success("✅ プログラム生成完了！")
-                st.rerun()
+            st.session_state.generated_code = generate_anomaly_detection_code(
+                combined_conditions, api_key
+            )
+            st.success("✅ プログラム生成完了！")
+            st.rerun()
         except Exception as e:
             st.error(f"❌ エラーが発生しました: {str(e)}")
 
-# 実行処理 - セキュア版
-current_code = isolated_state.get_generated_code()
-execute_requested = isolated_state.get_execute_requested()
+# 実行フラグの初期化
+if "execute_requested" not in st.session_state:
+    st.session_state.execute_requested = False
 
-if execute_button and current_code:
-    isolated_state.set_execute_requested(True)
+# 実行処理
+if execute_button and st.session_state.generated_code:
+    st.session_state.execute_requested = True
     st.rerun()
 
-if execute_requested and current_code:
+if st.session_state.execute_requested and st.session_state.generated_code:
     with st.spinner("▶️ プログラムを実行中..."):
         try:
-            # セキュアな画像パス取得
-            image_path = isolated_state.get_uploaded_image_path()
+            image_path = st.session_state.uploaded_image_path
             if not image_path or not os.path.exists(image_path):
                 default_image_path = os.path.join(
                     os.path.dirname(__file__), "utils", "apple_strawberry.png"
@@ -403,50 +352,45 @@ if execute_requested and current_code:
                     st.error("画像が見つかりません。")
                     st.stop()
 
-            execution_result = execute_code(
-                current_code,
+            st.session_state.execution_result = execute_code(
+                st.session_state.generated_code,
                 image_path,
-                isolated_state.get_box_threshold(),
+                st.session_state.box_threshold,
             )
-            isolated_state.set_execution_result(execution_result)
             st.success("✅ 実行完了！")
-            isolated_state.set_execute_requested(False)
+            st.session_state.execute_requested = False
             st.rerun()
         except Exception as e:
             st.error(f"❌ 実行エラー: {str(e)}")
-            isolated_state.set_execute_requested(False)
+            st.session_state.execute_requested = False
 
-# 結果表示エリア（画面下部）- セキュア版
-current_generated_code = isolated_state.get_generated_code()
-current_execution_result = isolated_state.get_execution_result()
-
-if current_generated_code or current_execution_result:
+# 結果表示エリア（画面下部）
+if st.session_state.generated_code or st.session_state.execution_result:
     st.markdown("---")
     result_col1, result_col2 = st.columns(2)
 
     with result_col1:
-        if current_generated_code:
+        if st.session_state.generated_code:
             st.subheader("📝 生成されたコード")
             with st.expander("コードを表示", expanded=False):
                 st.code(
-                    current_generated_code,
+                    st.session_state.generated_code,
                     language="python",
                     line_numbers=True,
                 )
 
             st.download_button(
                 label="📥 コードをダウンロード",
-                data=current_generated_code,
+                data=st.session_state.generated_code,
                 file_name="generated_program.py",
                 mime="text/plain",
                 use_container_width=True,
-                key="download_code_secure",
             )
 
     with result_col2:
-        if current_execution_result:
+        if st.session_state.execution_result:
             st.subheader("📊 実行結果")
-            result = current_execution_result
+            result = st.session_state.execution_result
 
             if "status" in result:
                 if result["status"] == "success":
@@ -461,7 +405,6 @@ if current_generated_code or current_execution_result:
                     st.code(result["output_text"], language="text")
 
 # フッター
-if not (current_generated_code or current_execution_result):
+if not (st.session_state.generated_code or st.session_state.execution_result):
     st.markdown("---")
     st.markdown("💡 **使い方**: 上記の1〜5のステップを順番に進めてください")
-    st.info("🔐 **セキュリティ**: このアプリはユーザー間でのデータ分離を実装しています")
