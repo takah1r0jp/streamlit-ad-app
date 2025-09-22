@@ -63,8 +63,15 @@ select = [
 
 ignore = [
     "E501",  # line too long (handled by formatter)
+    "W291",  # trailing whitespace (handled by formatter)
+    "W293",  # blank line contains whitespace (handled by formatter)
     "B008",  # do not perform function calls in argument defaults
     "B904",  # raise from None
+    "SIM116", # use dict instead of consecutive if statements (optional)
+    "SIM117", # use single with statement (optional)
+    "SIM103", # return negated condition directly (optional)
+    "B018",  # useless expression (may be intentional in some cases)
+    "B007",  # unused loop variable (common in data processing)
 ]
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
