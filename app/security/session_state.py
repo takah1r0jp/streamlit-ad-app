@@ -25,13 +25,17 @@ class IsolatedSessionState:
         self.session_manager = session_manager
 
         # セッション初期化状態を確認
-        if not st.session_state.get('session_initialized', False):
-            raise ValueError("セッションが初期化されていません。SecureSessionManagerを先に初期化してください。")
+        if not st.session_state.get("session_initialized", False):
+            raise ValueError(
+                "セッションが初期化されていません。SecureSessionManagerを先に初期化してください。"
+            )
 
-        self.session_id = st.session_state.get('secure_session_id')
+        self.session_id = st.session_state.get("secure_session_id")
 
         if not self.session_id:
-            raise ValueError("セッションIDが見つかりません。セキュリティ初期化に問題があります。")
+            raise ValueError(
+                "セッションIDが見つかりません。セキュリティ初期化に問題があります。"
+            )
 
         self._initialize_isolated_state()
 
@@ -41,12 +45,12 @@ class IsolatedSessionState:
         self.key_prefix = f"isolated_{self.session_id}_"
 
         # Initialize isolated state variables
-        self._init_if_not_exists('generated_code', "")
-        self._init_if_not_exists('uploaded_image_path', None)
-        self._init_if_not_exists('execution_result', None)
-        self._init_if_not_exists('normal_conditions', [""])
-        self._init_if_not_exists('box_threshold', 0.3)
-        self._init_if_not_exists('execute_requested', False)
+        self._init_if_not_exists("generated_code", "")
+        self._init_if_not_exists("uploaded_image_path", None)
+        self._init_if_not_exists("execution_result", None)
+        self._init_if_not_exists("normal_conditions", [""])
+        self._init_if_not_exists("box_threshold", 0.3)
+        self._init_if_not_exists("execute_requested", False)
 
     def _init_if_not_exists(self, key: str, default_value: Any) -> None:
         """Initialize a session state variable if it doesn't exist."""
@@ -60,74 +64,76 @@ class IsolatedSessionState:
 
     def set_generated_code(self, code: str) -> None:
         """Set generated code for this session only."""
-        isolated_key = self._get_isolated_key('generated_code')
+        isolated_key = self._get_isolated_key("generated_code")
         st.session_state[isolated_key] = code
 
     def get_generated_code(self) -> str:
         """Get generated code for this session."""
-        isolated_key = self._get_isolated_key('generated_code')
+        isolated_key = self._get_isolated_key("generated_code")
         return st.session_state.get(isolated_key, "")
 
     def set_uploaded_image_path(self, path: str | None) -> None:
         """Set uploaded image path for this session only."""
-        isolated_key = self._get_isolated_key('uploaded_image_path')
+        isolated_key = self._get_isolated_key("uploaded_image_path")
         st.session_state[isolated_key] = path
 
     def get_uploaded_image_path(self) -> str | None:
         """Get uploaded image path for this session."""
-        isolated_key = self._get_isolated_key('uploaded_image_path')
+        isolated_key = self._get_isolated_key("uploaded_image_path")
         return st.session_state.get(isolated_key)
 
     def set_execution_result(self, result: dict | None) -> None:
         """Set execution result for this session only."""
-        isolated_key = self._get_isolated_key('execution_result')
+        isolated_key = self._get_isolated_key("execution_result")
         st.session_state[isolated_key] = result
 
     def get_execution_result(self) -> dict | None:
         """Get execution result for this session."""
-        isolated_key = self._get_isolated_key('execution_result')
+        isolated_key = self._get_isolated_key("execution_result")
         return st.session_state.get(isolated_key)
 
     def set_normal_conditions(self, conditions: list[str]) -> None:
         """Set normal conditions for this session only."""
-        isolated_key = self._get_isolated_key('normal_conditions')
-        st.session_state[isolated_key] = conditions.copy()  # Create a copy to prevent reference sharing
+        isolated_key = self._get_isolated_key("normal_conditions")
+        st.session_state[isolated_key] = (
+            conditions.copy()
+        )  # Create a copy to prevent reference sharing
 
     def get_normal_conditions(self) -> list[str]:
         """Get normal conditions for this session."""
-        isolated_key = self._get_isolated_key('normal_conditions')
+        isolated_key = self._get_isolated_key("normal_conditions")
         conditions = st.session_state.get(isolated_key, [""])
         return conditions.copy()  # Return a copy to prevent modification
 
     def set_box_threshold(self, threshold: float) -> None:
         """Set box threshold for this session only."""
-        isolated_key = self._get_isolated_key('box_threshold')
+        isolated_key = self._get_isolated_key("box_threshold")
         st.session_state[isolated_key] = threshold
 
     def get_box_threshold(self) -> float:
         """Get box threshold for this session."""
-        isolated_key = self._get_isolated_key('box_threshold')
+        isolated_key = self._get_isolated_key("box_threshold")
         return st.session_state.get(isolated_key, 0.3)
 
     def set_execute_requested(self, requested: bool) -> None:
         """Set execute requested flag for this session only."""
-        isolated_key = self._get_isolated_key('execute_requested')
+        isolated_key = self._get_isolated_key("execute_requested")
         st.session_state[isolated_key] = requested
 
     def get_execute_requested(self) -> bool:
         """Get execute requested flag for this session."""
-        isolated_key = self._get_isolated_key('execute_requested')
+        isolated_key = self._get_isolated_key("execute_requested")
         return st.session_state.get(isolated_key, False)
 
     def clear_all_data(self) -> None:
         """Clear all isolated data for this session."""
         keys_to_clear = [
-            'generated_code',
-            'uploaded_image_path',
-            'execution_result',
-            'normal_conditions',
-            'box_threshold',
-            'execute_requested'
+            "generated_code",
+            "uploaded_image_path",
+            "execution_result",
+            "normal_conditions",
+            "box_threshold",
+            "execute_requested",
         ]
 
         for key in keys_to_clear:
@@ -157,14 +163,16 @@ class IsolatedSessionState:
             Dictionary with session summary (no sensitive data)
         """
         return {
-            'session_id_preview': self.session_id[:8] + '...',
-            'has_generated_code': bool(self.get_generated_code()),
-            'has_uploaded_image': bool(self.get_uploaded_image_path()),
-            'has_execution_result': bool(self.get_execution_result()),
-            'num_conditions': len([c for c in self.get_normal_conditions() if c.strip()]),
-            'box_threshold': self.get_box_threshold(),
-            'execute_requested': self.get_execute_requested(),
-            'total_session_keys': len(self.get_all_session_keys())
+            "session_id_preview": self.session_id[:8] + "...",
+            "has_generated_code": bool(self.get_generated_code()),
+            "has_uploaded_image": bool(self.get_uploaded_image_path()),
+            "has_execution_result": bool(self.get_execution_result()),
+            "num_conditions": len(
+                [c for c in self.get_normal_conditions() if c.strip()]
+            ),
+            "box_threshold": self.get_box_threshold(),
+            "execute_requested": self.get_execute_requested(),
+            "total_session_keys": len(self.get_all_session_keys()),
         }
 
     def migrate_from_global_state(self) -> None:
@@ -173,12 +181,12 @@ class IsolatedSessionState:
         This is for backward compatibility during the security upgrade.
         """
         migration_map = {
-            'generated_code': 'generated_code',
-            'uploaded_image_path': 'uploaded_image_path',
-            'execution_result': 'execution_result',
-            'normal_conditions': 'normal_conditions',
-            'box_threshold': 'box_threshold',
-            'execute_requested': 'execute_requested'
+            "generated_code": "generated_code",
+            "uploaded_image_path": "uploaded_image_path",
+            "execution_result": "execution_result",
+            "normal_conditions": "normal_conditions",
+            "box_threshold": "box_threshold",
+            "execute_requested": "execute_requested",
         }
 
         migrated_count = 0
@@ -198,7 +206,9 @@ class IsolatedSessionState:
                 del st.session_state[old_key]
 
         if migrated_count > 0:
-            st.info(f"✅ Migrated {migrated_count} session variables to secure isolated storage")
+            st.info(
+                f"✅ Migrated {migrated_count} session variables to secure isolated storage"
+            )
 
     def validate_isolation(self) -> bool:
         """

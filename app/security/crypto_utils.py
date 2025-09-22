@@ -28,14 +28,14 @@ class CryptoUtils:
             32-byte encryption key
         """
         if salt is None:
-            salt = b'streamlit_security_salt_2025'  # Fixed salt for session-based encryption
+            salt = b"streamlit_security_salt_2025"  # Fixed salt for session-based encryption
 
         # Use PBKDF2 to derive a key
         key = hashlib.pbkdf2_hmac(
-            'sha256',
-            session_id.encode('utf-8'),
+            "sha256",
+            session_id.encode("utf-8"),
             salt,
-            100000  # iterations
+            100000,  # iterations
         )
         return key[:32]  # AES-256 key length
 
@@ -52,14 +52,14 @@ class CryptoUtils:
         Returns:
             Base64 encoded encrypted data
         """
-        data_bytes = data.encode('utf-8')
+        data_bytes = data.encode("utf-8")
 
         # Simple XOR with key cycling
         encrypted = bytearray()
         for i, byte in enumerate(data_bytes):
             encrypted.append(byte ^ key[i % len(key)])
 
-        return base64.b64encode(encrypted).decode('utf-8')
+        return base64.b64encode(encrypted).decode("utf-8")
 
     @staticmethod
     def simple_decrypt(encrypted_data: str, key: bytes) -> str:
@@ -74,14 +74,14 @@ class CryptoUtils:
             Original string data
         """
         try:
-            encrypted_bytes = base64.b64decode(encrypted_data.encode('utf-8'))
+            encrypted_bytes = base64.b64decode(encrypted_data.encode("utf-8"))
 
             # Simple XOR with key cycling
             decrypted = bytearray()
             for i, byte in enumerate(encrypted_bytes):
                 decrypted.append(byte ^ key[i % len(key)])
 
-            return decrypted.decode('utf-8')
+            return decrypted.decode("utf-8")
         except Exception:
             # Return empty string if decryption fails
             return ""
@@ -99,7 +99,7 @@ class CryptoUtils:
             Hex-encoded hash
         """
         combined = f"{session_id}:{data}"
-        return hashlib.sha256(combined.encode('utf-8')).hexdigest()
+        return hashlib.sha256(combined.encode("utf-8")).hexdigest()
 
     @staticmethod
     def secure_compare(a: str, b: str) -> bool:
@@ -113,4 +113,4 @@ class CryptoUtils:
         Returns:
             True if strings are equal
         """
-        return secrets.compare_digest(a.encode('utf-8'), b.encode('utf-8'))
+        return secrets.compare_digest(a.encode("utf-8"), b.encode("utf-8"))

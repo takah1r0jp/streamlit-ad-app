@@ -64,6 +64,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 # セキュリティ初期化（修正版）
 def initialize_security_components():
     """セキュリティコンポーネントを適切な順序で初期化"""
@@ -72,7 +73,7 @@ def initialize_security_components():
         security_manager = SecureSessionManager()
 
         # 2. セッションが初期化されたことを確認
-        if not st.session_state.get('session_initialized', False):
+        if not st.session_state.get("session_initialized", False):
             st.error("セッション初期化に失敗しました")
             st.stop()
 
@@ -92,15 +93,18 @@ def initialize_security_components():
         with st.expander("🔍 デバッグ情報"):
             st.write("セッション状態:")
             debug_info = {
-                'session_initialized': st.session_state.get('session_initialized', False),
-                'secure_session_id_exists': 'secure_session_id' in st.session_state,
-                'session_key_exists': 'session_key' in st.session_state,
-                'api_key_set': st.session_state.get('api_key_set', False),
-                'all_session_keys': list(st.session_state.keys())
+                "session_initialized": st.session_state.get(
+                    "session_initialized", False
+                ),
+                "secure_session_id_exists": "secure_session_id" in st.session_state,
+                "session_key_exists": "session_key" in st.session_state,
+                "api_key_set": st.session_state.get("api_key_set", False),
+                "all_session_keys": list(st.session_state.keys()),
             }
             st.json(debug_info)
 
         st.stop()
+
 
 # セキュリティコンポーネントの取得
 security_manager, isolated_state = initialize_security_components()
@@ -211,7 +215,10 @@ with col1:
     )
 
     new_api_key = st.text_input(
-        "Anthropic APIキーを入力", type="password", value=api_key, key="api_input_secure"
+        "Anthropic APIキーを入力",
+        type="password",
+        value=api_key,
+        key="api_input_secure",
     )
     if new_api_key != api_key:
         # セキュアなAPIキー保存（環境変数は使用しない）
@@ -250,7 +257,9 @@ with col1:
         st.image(current_image, caption="現在の画像", width=200)
 
     uploaded_file = st.file_uploader(
-        "画像をアップロード（デフォルト画像も利用可能）", type=["png", "jpg", "jpeg"], key="image_upload_secure"
+        "画像をアップロード（デフォルト画像も利用可能）",
+        type=["png", "jpg", "jpeg"],
+        key="image_upload_secure",
     )
     if uploaded_file is not None:
         # セキュアなファイル保存
@@ -310,7 +319,9 @@ with col2:
             st.rerun()
     with col_remove:
         if (
-            st.button("➖ 削除", use_container_width=True, key="remove_condition_secure")
+            st.button(
+                "➖ 削除", use_container_width=True, key="remove_condition_secure"
+            )
             and len(isolated_state.get_normal_conditions()) > 1
         ):
             new_conditions = isolated_state.get_normal_conditions()

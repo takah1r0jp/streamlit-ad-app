@@ -31,11 +31,11 @@ class SecureSessionManager:
         """Initialize session with secure ID and storage."""
         try:
             # Generate or retrieve session ID
-            if 'secure_session_id' not in st.session_state:
+            if "secure_session_id" not in st.session_state:
                 st.session_state.secure_session_id = self.crypto.generate_session_id()
 
             # Initialize session encryption key
-            if 'session_key' not in st.session_state:
+            if "session_key" not in st.session_state:
                 session_id = st.session_state.secure_session_id
                 st.session_state.session_key = self.crypto.derive_key(session_id)
 
@@ -44,7 +44,7 @@ class SecureSessionManager:
 
             # Initialize security flags - 確実に設定
             st.session_state.session_initialized = True
-            if 'api_key_set' not in st.session_state:
+            if "api_key_set" not in st.session_state:
                 st.session_state.api_key_set = False
 
         except Exception as e:
@@ -57,7 +57,7 @@ class SecureSessionManager:
         session_id = st.session_state.secure_session_id
 
         # Create session-specific temporary directory
-        if 'secure_temp_dir' not in st.session_state:
+        if "secure_temp_dir" not in st.session_state:
             base_temp = tempfile.gettempdir()
             session_temp_dir = os.path.join(base_temp, f"streamlit_secure_{session_id}")
 
@@ -103,11 +103,11 @@ class SecureSessionManager:
         Returns:
             Decrypted API key or None if not set
         """
-        if not st.session_state.get('api_key_set', False):
+        if not st.session_state.get("api_key_set", False):
             return None
 
         try:
-            encrypted_key = st.session_state.get('encrypted_api_key')
+            encrypted_key = st.session_state.get("encrypted_api_key")
             if not encrypted_key:
                 return None
 
@@ -124,7 +124,7 @@ class SecureSessionManager:
     def clear_api_key(self) -> None:
         """Clear the stored API key from this session."""
         st.session_state.api_key_set = False
-        if 'encrypted_api_key' in st.session_state:
+        if "encrypted_api_key" in st.session_state:
             del st.session_state.encrypted_api_key
 
     def get_secure_file_path(self, filename: str) -> str:
@@ -137,7 +137,7 @@ class SecureSessionManager:
         Returns:
             Secure file path isolated to this session
         """
-        if 'secure_temp_dir' not in st.session_state:
+        if "secure_temp_dir" not in st.session_state:
             self._initialize_file_storage()
 
         secure_dir = st.session_state.secure_temp_dir
@@ -164,18 +164,18 @@ class SecureSessionManager:
             Sanitized filename
         """
         # Remove dangerous characters and patterns
-        safe_name = filename.replace('..', '').replace('/', '').replace('\\', '')
+        safe_name = filename.replace("..", "").replace("/", "").replace("\\", "")
 
         # Keep only alphanumeric, dots, hyphens, and underscores
         safe_chars = []
         for char in safe_name:
-            if char.isalnum() or char in '.-_':
+            if char.isalnum() or char in ".-_":
                 safe_chars.append(char)
 
-        safe_name = ''.join(safe_chars)
+        safe_name = "".join(safe_chars)
 
         # Ensure it's not empty and doesn't start with dot
-        if not safe_name or safe_name.startswith('.'):
+        if not safe_name or safe_name.startswith("."):
             safe_name = f"file_{st.session_state.secure_session_id[:8]}"
 
         return safe_name
@@ -187,19 +187,19 @@ class SecureSessionManager:
             self.clear_api_key()
 
             # Remove temporary directory
-            if 'secure_temp_dir' in st.session_state:
+            if "secure_temp_dir" in st.session_state:
                 temp_dir = st.session_state.secure_temp_dir
                 if os.path.exists(temp_dir):
                     shutil.rmtree(temp_dir, ignore_errors=True)
 
             # Clear session state
             session_keys = [
-                'secure_session_id',
-                'session_key',
-                'secure_temp_dir',
-                'session_initialized',
-                'api_key_set',
-                'encrypted_api_key'
+                "secure_session_id",
+                "session_key",
+                "secure_temp_dir",
+                "session_initialized",
+                "api_key_set",
+                "encrypted_api_key",
             ]
 
             for key in session_keys:
@@ -217,13 +217,17 @@ class SecureSessionManager:
         Returns:
             Dictionary with session information (no sensitive data)
         """
-        session_id = st.session_state.get('secure_session_id', 'Not initialized')
+        session_id = st.session_state.get("secure_session_id", "Not initialized")
 
         return {
-            'session_id_preview': session_id[:8] + '...' if len(session_id) > 8 else session_id,
-            'api_key_set': st.session_state.get('api_key_set', False),
-            'temp_dir_exists': os.path.exists(st.session_state.get('secure_temp_dir', '')),
-            'session_initialized': st.session_state.get('session_initialized', False)
+            "session_id_preview": session_id[:8] + "..."
+            if len(session_id) > 8
+            else session_id,
+            "api_key_set": st.session_state.get("api_key_set", False),
+            "temp_dir_exists": os.path.exists(
+                st.session_state.get("secure_temp_dir", "")
+            ),
+            "session_initialized": st.session_state.get("session_initialized", False),
         }
 
 
