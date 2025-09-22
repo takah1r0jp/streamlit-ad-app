@@ -8,10 +8,8 @@ import numpy as np
 import psutil
 import torch
 from PIL import Image
-from transformers import (
-    AutoModelForZeroShotObjectDetection,
-    AutoProcessor,
-)
+from transformers import AutoModelForZeroShotObjectDetection, AutoProcessor
+import builtins
 
 # ロギングの設定
 logging.basicConfig(
@@ -134,7 +132,6 @@ def execute_code(code, image_path=None, box_threshold=0.3):
 # 生成されたコードの中から対象の関数を一つ実行する関数
 def execute_function_from_code(code, func_name, image_path, image, box_threshold=0.3):
     """指定された関数をコードから実行し、異常スコアとテキスト出力を取得"""
-    import builtins
 
     namespace = {}
     # 出力をキャプチャするためのリスト
