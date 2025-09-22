@@ -63,7 +63,7 @@ class TestSecurityIsolation(unittest.TestCase):
         mock_session_state = MockSessionState()
 
         with patch('app.security.session_manager.st.session_state', mock_session_state):
-            manager = SecureSessionManager()
+            SecureSessionManager()
 
             # セッション初期化が完了していることを確認
             self.assertTrue(mock_session_state.get('session_initialized', False))
