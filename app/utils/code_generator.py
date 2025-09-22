@@ -148,7 +148,7 @@ def generate_anomaly_detection_code(
                 encoding="utf-8",
             ) as o:
                 o.write(final_function)
-        except IOError as e:
+        except OSError as e:
             logger.warning(
                 f"ファイル保存に失敗しましたが、コード生成は成功しました: {e}"
             )

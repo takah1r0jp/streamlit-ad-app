@@ -515,7 +515,7 @@ def get_list_bbox_score(boxes, scores, labels, x_ratio, y_ratio):
     scores_list = []
     labels_list = []
 
-    for box, score, label in zip(boxes, scores, labels):
+    for box, score, label in zip(boxes, scores, labels, strict=False):
         box = [round(i, 2) for i in box.tolist()]
         box[0], box[2] = round(box[0] * x_ratio, 3), round(box[2] * x_ratio, 3)
         box[1], box[3] = round(box[1] * y_ratio, 3), round(box[3] * y_ratio, 3)
@@ -716,7 +716,7 @@ def detect(image, obj_name):  # list(scoreの高い順にbboxを返す)
         labels_list = []
 
         for score, label, box in zip(
-            results["scores"], results["labels"], results["boxes"]
+            results["scores"], results["labels"], results["boxes"], strict=False
         ):
             box = [round(i, 1) for i in box.tolist()]
             x0, y0, x1, y1 = (int(coord) for coord in box)
@@ -745,7 +745,9 @@ def detect(image, obj_name):  # list(scoreの高い順にbboxを返す)
         # もしobj_name1つの場合，patch_listを返す
         if len(obj_name_list) == 1:
             patch_list = []
-            for box, score, label in zip(boxes_list, scores_list, labels_list):
+            for box, score, label in zip(
+                boxes_list, scores_list, labels_list, strict=False
+            ):
                 left = int(box[0])
                 lower = int(box[3])
                 right = int(box[2])
@@ -760,7 +762,9 @@ def detect(image, obj_name):  # list(scoreの高い順にbboxを返す)
             logger.info(f"検出対象オブジェクト: {obj_name_list}")
 
             # labels_list =  ['oatmeal', 'banana chips almonds']
-            for box, score, label in zip(boxes_list, scores_list, labels_list):
+            for box, score, label in zip(
+                boxes_list, scores_list, labels_list, strict=False
+            ):
                 # labelが""の場合，スキップ
                 if label == "":
                     continue
