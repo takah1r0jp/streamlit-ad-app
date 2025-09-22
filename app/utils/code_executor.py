@@ -8,9 +8,10 @@ import numpy as np
 import psutil
 import torch
 from PIL import Image
-from transformers import (AutoImageProcessor, AutoModelForVision2Seq,
-                          AutoModelForZeroShotObjectDetection, AutoProcessor,
-                          AutoTokenizer, StoppingCriteria)
+from transformers import (
+    AutoModelForZeroShotObjectDetection,
+    AutoProcessor,
+)
 
 # ロギングの設定
 logging.basicConfig(

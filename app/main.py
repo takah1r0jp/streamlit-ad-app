@@ -1,12 +1,10 @@
 import os
-import sys
 import tempfile
 
 import streamlit as st
 from PIL import Image
 from utils.code_executor import check_memory_usage, execute_code
 from utils.code_generator import generate_anomaly_detection_code
-from utils.template_prompt import prompt
 
 # ページ設定
 st.set_page_config(

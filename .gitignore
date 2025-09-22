@@ -66,6 +66,11 @@ service-account-*.json
 /app/generated/
 generated_*.py
 
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
 # OS generated files
 .DS_Store
 .DS_Store?
