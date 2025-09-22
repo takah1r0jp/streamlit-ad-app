@@ -60,4 +60,10 @@ export ANTHROPIC_API_KEY="your_api_key_here"
 - **AI**: Anthropic Claude API
 - **物体検出**: Grounding DINO (Hugging Face)
 - **画像処理**: PIL, PyTorch
-# CI trigger for permission fix
+
+## 📚 ドキュメント
+
+- 開発フロー: `docs/development-flow.md`
+- プロジェクト概要: `docs/project-overview.md`
+- Cloud Run セットアップ: `docs/cloud-run-setup.md`
+- デバッグ手順: `docs/debug-instructions.md`

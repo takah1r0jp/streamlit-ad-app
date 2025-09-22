@@ -1,12 +1,7 @@
-# [移動済み] Cloud Run デプロイ設定手順
+# Cloud Run デプロイ設定手順
 
-このドキュメントは `docs/cloud-run-setup.md` に移動しました。
+このドキュメントはルートの `CLOUD_RUN_SETUP.md` から移動しました。
 
-Git の履歴保持のためファイルは残しています。最新の内容は以下を参照してください。
-
-- docs/cloud-run-setup.md
-
-## 旧コンテンツ（参考用）
 ## 🚀 セットアップ手順（一度だけ実行）
 
 ### 1. GCP プロジェクト設定
@@ -119,19 +114,19 @@ Proxy status: DNS only (灰色クラウド)
 
 ## 🔄 デプロイ実行
 
-1. **コードをmainブランチにpush**
+1. `main` ブランチに push
 ```bash
 git add .
 git commit -m "Add Cloud Run configuration"
 git push origin main
 ```
 
-2. **GitHub Actionsで自動デプロイされることを確認**
-   - GitHub > Actions タブでワークフローの実行状況を確認
-   - デプロイ完了後、ログに Cloud Run URL が表示される
+2. GitHub Actions で自動デプロイを確認
+   - Actions タブでワークフロー実行を確認
+   - 完了後、ログに Cloud Run URL が表示
 
-3. **独自ドメインでアクセス確認**
-   - https://yourdomain.com でアプリにアクセス
+3. 独自ドメインでアクセス確認
+   - `https://yourdomain.com`
 
 ## 💰 月額コスト確認
 
@@ -147,15 +142,15 @@ gcloud billing budgets list
 
 ### よくある問題
 
-1. **モデルロードが遅い**
+1. モデルロードが遅い
    - Cloud Run の起動時間設定を確認
    - `startupProbe` の設定を調整
 
-2. **メモリエラー**
+2. メモリエラー
    - memory を 3Gi に増加
    - concurrency を下げる (3-5)
 
-3. **タイムアウトエラー**
+3. タイムアウトエラー
    - timeout を 900 (15分) に増加
 
 ### ログ確認
@@ -178,4 +173,5 @@ Cloud Console > Cloud Run > サービス詳細で以下を監視：
 
 ---
 
-予想月額コスト: **約40-50円** (月100アクセス想定)
+予想月額コスト: 約40-50円 (月100アクセス想定)
+

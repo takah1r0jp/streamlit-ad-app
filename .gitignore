@@ -1,4 +1,6 @@
+# ===========================================
 # Python
+# ===========================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -23,7 +25,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# ===========================================
 # Virtual environments
+# ===========================================
 .env
 .venv
 env/
@@ -33,6 +37,9 @@ env.bak/
 venv.bak/
 /.venv
 
+# ===========================================
+# IDE and Editor files
+# ===========================================
 # PyCharm
 .idea/
 
@@ -43,67 +50,232 @@ venv.bak/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Environments and secrets
+# Vim/Neovim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ===========================================
+# Environment variables and secrets
+# ===========================================
+.env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*.local
 *.key
 .secrets
 config.json
+secrets.toml
 
 # API Keys (ensure these are never committed)
 *api_key*
 *API_KEY*
+*apikey*
+*APIKEY*
 .anthropic_key
 .openai_key
+.claude_key
+.huggingface_key
 
-# GCP Service Account Keys (security critical)
+# ===========================================
+# Cloud provider keys (security critical)
+# ===========================================
+# GCP Service Account Keys
 key.json
 *-key.json
 service-account-*.json
+gcp-*.json
 
-# Generated files
-/app/generated_code.py
+# AWS
+.aws/
+*.pem
+*.p12
+*.pfx
+
+# Azure
+*.publishsettings
+
+# ===========================================
+# Generated and temporary files
+# ===========================================
+# Application generated files
 /app/generated/
+/app/generated_code.py
 generated_*.py
-
-# Testing
-.coverage
-.pytest_cache/
-htmlcov/
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Logs
-*.log
-logs/
+output/
+outputs/
 
 # Temporary files
 *.tmp
 *.temp
 temp/
 tmp/
+.tmp/
 
+# Backup files
+*.bak
+*.backup
+*~
+
+# ===========================================
+# Testing and coverage
+# ===========================================
+.coverage
+.coverage.*
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.cache
+
+# ===========================================
+# Documentation
+# ===========================================
+docs/_build/
+docs/.doctrees/
+.sphinx/
+
+# ===========================================
+# Logs
+# ===========================================
+*.log
+logs/
+log/
+*.log.*
+
+# ===========================================
+# OS generated files
+# ===========================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Windows
+ehthumbs.db
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs_vista.db
+*.stackdump
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===========================================
+# Machine Learning and AI
+# ===========================================
 # Model downloads and cache
 .cache/
 models/
+model_cache/
 *.bin
 *.safetensors
 *.onnx
+*.pt
+*.pth
+checkpoints/
+wandb/
+mlruns/
 
+# Hugging Face cache
+.huggingface/
+transformers_cache/
+
+# ===========================================
+# Container and deployment
+# ===========================================
 # Docker
 .dockerignore
+docker-compose.override.yml
 
-# Streamlit
+# Kubernetes
+*.kubeconfig
+
+# ===========================================
+# Streamlit specific
+# ===========================================
 .streamlit/secrets.toml
+.streamlit/config.toml
 
+# ===========================================
+# Development tools
+# ===========================================
+# Ruff cache
+.ruff_cache/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Pytype static type analyzer
+.pytype/
+
+# Black
+.black/
+
+# ===========================================
+# Package managers
+# ===========================================
+# uv
+uv.lock
+
+# Poetry
+poetry.lock
+
+# Pipenv
+Pipfile.lock
+
+# ===========================================
+# Claude Code and AI assistants
+# ===========================================
 # Claude Code documentation
 CLAUDE.md
 
-.app/.generated/
+# Serena MCP server
+.serena/
+
+# Other AI assistant files
+.claude/
+.cursor/
+
+# ===========================================
+# Project specific
+# ===========================================
+# Debug and development files
+debug_*.py
+DEBUG_*.md
+
+# Configuration overrides
+*local.json
+*local.yaml
+*local.yml
