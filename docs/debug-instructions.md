@@ -1,12 +1,7 @@
-# [移動済み] Grounding DINO モデルロード検証手順
+# Grounding DINO モデルロード検証手順
 
-このドキュメントは `docs/debug-instructions.md` に移動しました。
+このドキュメントはルートの `DEBUG_INSTRUCTIONS.md` から移動しました。
 
-Git の履歴保持のためファイルは残しています。最新の内容は以下を参照してください。
-
-- docs/debug-instructions.md
-
-## 旧コンテンツ（参考用）
 ## 実行方法
 
 ### 1. デバッグスクリプトをEC2に転送
@@ -91,20 +86,21 @@ chmod +x /app/debug_model_load.py
 
 ## 結果の解釈
 
-- **Processor loaded successfully**: ✅ 基本的なライブラリは動作
-- **Model loaded successfully**: ✅ メモリ十分、モデルロード成功
-- **Memory Error**: ❌ メモリ不足、インスタンス拡張が必要
-- **CUDA Error**: ❌ GPU設定問題（通常CPUで動作するので問題なし）
-- **Network Error**: ❌ モデルダウンロード失敗、再実行で解決する場合が多い
+- Processor loaded successfully: 基本的なライブラリは動作
+- Model loaded successfully: メモリ十分、モデルロード成功
+- Memory Error: メモリ不足、インスタンス拡張が必要
+- CUDA Error: GPU設定問題（通常CPUで動作するので問題なし）
+- Network Error: モデルダウンロード失敗、再実行で改善する場合あり
 
 ## 次のアクション
 
 ### メモリ不足が判明した場合
 1. インスタンスを t3.medium に変更
-2. または swap メモリ追加
-3. または軽量モデル (grounding-dino-tiny) に変更
+2. もしくは swap メモリ追加
+3. もしくは軽量モデル (grounding-dino-tiny) に変更
 
 ### モデルロード成功の場合  
-1. Streamlit アプリでの実際の動作テスト
+1. Streamlit アプリでの実動作確認
 2. 物体検出精度の確認
 3. レスポンス時間の測定
+

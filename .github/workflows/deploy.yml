@@ -1,7 +1,8 @@
-name: Deploy to Cloud Run (manual)
+name: Deploy to Cloud Run (manual) - EMERGENCY DISABLED
 
 on:
-  workflow_dispatch:
+  # EMERGENCY: Deployment disabled due to API key security incident
+  # workflow_dispatch:
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}

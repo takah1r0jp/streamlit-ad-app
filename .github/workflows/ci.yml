@@ -134,7 +134,8 @@ jobs:
 
   deploy:
     needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # EMERGENCY: Auto-deployment disabled due to API key security incident
+    if: false  # github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
