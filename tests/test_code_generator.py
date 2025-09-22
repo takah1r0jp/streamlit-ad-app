@@ -1,4 +1,3 @@
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -34,9 +33,7 @@ class TestCodeGenerator:
 
         mock_response = MagicMock()
         mock_response.content = [MagicMock()]
-        mock_response.content[
-            0
-        ].text = """
+        mock_response.content[0].text = """
         def execute_command(image_path, image):
             # テストコード
             return 0
@@ -88,9 +85,7 @@ class TestCodeGenerator:
 
         mock_response = MagicMock()
         mock_response.content = [MagicMock()]
-        mock_response.content[
-            0
-        ].text = """
+        mock_response.content[0].text = """
         def other_function():
             return 0
         """
@@ -146,16 +141,14 @@ class TestCodeGenerator:
 
         mock_response = MagicMock()
         mock_response.content = [MagicMock()]
-        mock_response.content[
-            0
-        ].text = """
+        mock_response.content[0].text = """
         def execute_command(image_path, image):
             return 0
         """
         mock_client.messages.create.return_value = mock_response
 
         # ファイル書き込みエラーのシミュレーション
-        mock_open.side_effect = IOError("Permission denied")
+        mock_open.side_effect = OSError("Permission denied")
 
         # エラーが発生してもコード生成は成功する
         result = generate_anomaly_detection_code("test condition", "dummy_api_key")

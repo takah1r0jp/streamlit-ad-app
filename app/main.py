@@ -109,7 +109,9 @@ def get_step_status(step_num, api_key, image_exists, conditions_valid, code_exis
         return (
             "completed"
             if api_key and image_exists
-            else "active" if api_key and not image_exists else "pending"
+            else "active"
+            if api_key and not image_exists
+            else "pending"
         )
     elif step_num == 3:
         return (
