@@ -2,7 +2,7 @@
 Isolated session state management to prevent data sharing between users.
 """
 
-from typing import Any, Optional, List, Dict
+from typing import Any
 
 import streamlit as st
 
@@ -23,10 +23,15 @@ class IsolatedSessionState:
             session_manager: SecureSessionManager instance
         """
         self.session_manager = session_manager
+
+        # セッション初期化状態を確認
+        if not st.session_state.get('session_initialized', False):
+            raise ValueError("セッションが初期化されていません。SecureSessionManagerを先に初期化してください。")
+
         self.session_id = st.session_state.get('secure_session_id')
 
         if not self.session_id:
-            raise ValueError("Session must be initialized before creating IsolatedSessionState")
+            raise ValueError("セッションIDが見つかりません。セキュリティ初期化に問題があります。")
 
         self._initialize_isolated_state()
 
@@ -63,32 +68,32 @@ class IsolatedSessionState:
         isolated_key = self._get_isolated_key('generated_code')
         return st.session_state.get(isolated_key, "")
 
-    def set_uploaded_image_path(self, path: Optional[str]) -> None:
+    def set_uploaded_image_path(self, path: str | None) -> None:
         """Set uploaded image path for this session only."""
         isolated_key = self._get_isolated_key('uploaded_image_path')
         st.session_state[isolated_key] = path
 
-    def get_uploaded_image_path(self) -> Optional[str]:
+    def get_uploaded_image_path(self) -> str | None:
         """Get uploaded image path for this session."""
         isolated_key = self._get_isolated_key('uploaded_image_path')
         return st.session_state.get(isolated_key)
 
-    def set_execution_result(self, result: Optional[Dict]) -> None:
+    def set_execution_result(self, result: dict | None) -> None:
         """Set execution result for this session only."""
         isolated_key = self._get_isolated_key('execution_result')
         st.session_state[isolated_key] = result
 
-    def get_execution_result(self) -> Optional[Dict]:
+    def get_execution_result(self) -> dict | None:
         """Get execution result for this session."""
         isolated_key = self._get_isolated_key('execution_result')
         return st.session_state.get(isolated_key)
 
-    def set_normal_conditions(self, conditions: List[str]) -> None:
+    def set_normal_conditions(self, conditions: list[str]) -> None:
         """Set normal conditions for this session only."""
         isolated_key = self._get_isolated_key('normal_conditions')
         st.session_state[isolated_key] = conditions.copy()  # Create a copy to prevent reference sharing
 
-    def get_normal_conditions(self) -> List[str]:
+    def get_normal_conditions(self) -> list[str]:
         """Get normal conditions for this session."""
         isolated_key = self._get_isolated_key('normal_conditions')
         conditions = st.session_state.get(isolated_key, [""])
@@ -133,7 +138,7 @@ class IsolatedSessionState:
         # Reinitialize with default values
         self._initialize_isolated_state()
 
-    def get_all_session_keys(self) -> List[str]:
+    def get_all_session_keys(self) -> list[str]:
         """
         Get all session keys belonging to this isolated session.
 
@@ -144,7 +149,7 @@ class IsolatedSessionState:
         session_keys = [key for key in all_keys if key.startswith(self.key_prefix)]
         return session_keys
 
-    def get_session_summary(self) -> Dict[str, Any]:
+    def get_session_summary(self) -> dict[str, Any]:
         """
         Get a summary of the current session state (for debugging).
 

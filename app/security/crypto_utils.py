@@ -5,9 +5,6 @@ Cryptographic utilities for secure data handling.
 import base64
 import hashlib
 import secrets
-from typing import Optional
-
-import streamlit as st
 
 
 class CryptoUtils:
@@ -19,7 +16,7 @@ class CryptoUtils:
         return secrets.token_urlsafe(32)
 
     @staticmethod
-    def derive_key(session_id: str, salt: Optional[bytes] = None) -> bytes:
+    def derive_key(session_id: str, salt: bytes | None = None) -> bytes:
         """
         Derive an encryption key from session ID using PBKDF2.
 

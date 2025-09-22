@@ -1,13 +1,12 @@
 import os
-import tempfile
 
 import streamlit as st
 from PIL import Image
-from utils.code_executor import check_memory_usage, execute_code
-from utils.code_generator import generate_anomaly_detection_code
 
 # セキュリティモジュールのインポート
-from security import SecureSessionManager, IsolatedSessionState
+from security import IsolatedSessionState, SecureSessionManager
+from utils.code_executor import check_memory_usage, execute_code
+from utils.code_generator import generate_anomaly_detection_code
 
 # ページ設定
 st.set_page_config(
@@ -65,23 +64,46 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# セキュリティ初期化
-@st.cache_resource
-def initialize_security():
-    """セキュリティマネージャーを初期化"""
-    return SecureSessionManager()
+# セキュリティ初期化（修正版）
+def initialize_security_components():
+    """セキュリティコンポーネントを適切な順序で初期化"""
+    try:
+        # 1. SecureSessionManagerを初期化（これがsession_idを作成）
+        security_manager = SecureSessionManager()
 
-# セキュリティマネージャーの取得
-security_manager = initialize_security()
+        # 2. セッションが初期化されたことを確認
+        if not st.session_state.get('session_initialized', False):
+            st.error("セッション初期化に失敗しました")
+            st.stop()
 
-# 分離されたセッション状態の初期化
-try:
-    isolated_state = IsolatedSessionState(security_manager)
-    # 古いグローバル状態から新しい分離状態への移行
-    isolated_state.migrate_from_global_state()
-except Exception as e:
-    st.error(f"セキュリティ初期化エラー: {e}")
-    st.stop()
+        # 3. IsolatedSessionStateを初期化
+        isolated_state = IsolatedSessionState(security_manager)
+
+        # 4. 古いグローバル状態から新しい分離状態への移行
+        isolated_state.migrate_from_global_state()
+
+        return security_manager, isolated_state
+
+    except Exception as e:
+        st.error(f"セキュリティ初期化エラー: {e}")
+        st.error("ページを再読み込みしてください")
+
+        # デバッグ情報
+        with st.expander("🔍 デバッグ情報"):
+            st.write("セッション状態:")
+            debug_info = {
+                'session_initialized': st.session_state.get('session_initialized', False),
+                'secure_session_id_exists': 'secure_session_id' in st.session_state,
+                'session_key_exists': 'session_key' in st.session_state,
+                'api_key_set': st.session_state.get('api_key_set', False),
+                'all_session_keys': list(st.session_state.keys())
+            }
+            st.json(debug_info)
+
+        st.stop()
+
+# セキュリティコンポーネントの取得
+security_manager, isolated_state = initialize_security_components()
 
 # タイトル
 st.title("🔐 セキュア AI異常検知プログラム生成")

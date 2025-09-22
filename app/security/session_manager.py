@@ -5,8 +5,6 @@ Secure session management for API keys and user isolation.
 import os
 import shutil
 import tempfile
-from pathlib import Path
-from typing import Optional
 
 import streamlit as st
 
@@ -31,22 +29,28 @@ class SecureSessionManager:
 
     def _initialize_session(self) -> None:
         """Initialize session with secure ID and storage."""
-        # Generate or retrieve session ID
-        if 'secure_session_id' not in st.session_state:
-            st.session_state.secure_session_id = self.crypto.generate_session_id()
+        try:
+            # Generate or retrieve session ID
+            if 'secure_session_id' not in st.session_state:
+                st.session_state.secure_session_id = self.crypto.generate_session_id()
 
-        # Initialize session encryption key
-        if 'session_key' not in st.session_state:
-            session_id = st.session_state.secure_session_id
-            st.session_state.session_key = self.crypto.derive_key(session_id)
+            # Initialize session encryption key
+            if 'session_key' not in st.session_state:
+                session_id = st.session_state.secure_session_id
+                st.session_state.session_key = self.crypto.derive_key(session_id)
 
-        # Initialize secure storage directories
-        self._initialize_file_storage()
+            # Initialize secure storage directories
+            self._initialize_file_storage()
 
-        # Initialize security flags
-        if 'session_initialized' not in st.session_state:
+            # Initialize security flags - 確実に設定
             st.session_state.session_initialized = True
-            st.session_state.api_key_set = False
+            if 'api_key_set' not in st.session_state:
+                st.session_state.api_key_set = False
+
+        except Exception as e:
+            # セッション初期化失敗時のフォールバック
+            st.session_state.session_initialized = False
+            raise RuntimeError(f"セッション初期化に失敗: {e}")
 
     def _initialize_file_storage(self) -> None:
         """Initialize isolated file storage for this session."""
@@ -92,7 +96,7 @@ class SecureSessionManager:
             st.error(f"Failed to store API key securely: {e}")
             return False
 
-    def get_api_key(self) -> Optional[str]:
+    def get_api_key(self) -> str | None:
         """
         Retrieve and decrypt the API key for this session.
 
@@ -225,4 +229,3 @@ class SecureSessionManager:
 
 class SecurityError(Exception):
     """Raised when a security violation is detected."""
-    pass
