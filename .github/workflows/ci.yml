@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: asia-northeast1
+  REPOSITORY: streamlit-ad-app
+  SERVICE: streamlit-ad-app
+  REGION: asia-northeast1
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -133,6 +140,57 @@ jobs:
       run: |
         # 基本的なパフォーマンステスト（モックAPIを使用）
         echo "Performance testing placeholder - implement as needed"
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Google Auth
+      id: auth
+      uses: 'google-github-actions/auth@v2'
+      with:
+        credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+    - name: Set up Cloud SDK
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Configure Docker to use gcloud
+      run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+
+    - name: Create Artifact Registry repository (if not exists)
+      run: |
+        gcloud artifacts repositories create ${{ env.REPOSITORY }} \
+          --repository-format=docker \
+          --location=${{ env.GAR_LOCATION }} \
+          --description="Docker repository for Streamlit AD App" || true
+
+    - name: Build and Push Container
+      run: |-
+        docker build -f Dockerfile.cloudrun -t "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/app:${{ github.sha }}" ./
+        docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/app:${{ github.sha }}"
+
+    - name: Deploy to Cloud Run
+      id: deploy
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        service: ${{ env.SERVICE }}
+        region: ${{ env.REGION }}
+        image: ${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/app:${{ github.sha }}
+        flags: |
+          --allow-unauthenticated
+          --service-account=cloud-run-sa@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+          --memory=2Gi
+          --cpu=1
+          --min-instances=0
+          --max-instances=3
+          --concurrency=5
+          --timeout=600
+
+    - name: Show Output
+      run: echo ${{ steps.deploy.outputs.url }}
 
   auto-format:
     runs-on: ubuntu-latest
