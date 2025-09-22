@@ -4,12 +4,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from app.utils.code_executor import (
-    check_memory_usage,
-    detect,
-    execute_code,
-    load_model_with_fallback,
-)
+from app.utils.code_executor import (check_memory_usage, detect, execute_code,
+                                     load_model_with_fallback)
 
 
 class TestCodeExecutor:

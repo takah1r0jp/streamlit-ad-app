@@ -1,6 +1,7 @@
 # 入力：画像1枚，生成されたコード（関数1つ）
 # 出力：正常か異常かの判定結果
 
+import builtins
 import logging
 import os
 
@@ -9,7 +10,6 @@ import psutil
 import torch
 from PIL import Image
 from transformers import AutoModelForZeroShotObjectDetection, AutoProcessor
-import builtins
 
 # ロギングの設定
 logging.basicConfig(
