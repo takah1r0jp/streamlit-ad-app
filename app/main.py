@@ -308,6 +308,8 @@ with col2:
     # 条件が変更された場合、セキュアストレージに保存
     if updated_conditions != current_conditions:
         isolated_state.set_normal_conditions(updated_conditions)
+        # 条件が変更されたら即座に再実行して状態を更新
+        st.rerun()
 
     # 条件の追加・削除（コンパクト）
     col_add, col_remove = st.columns([1, 1])
