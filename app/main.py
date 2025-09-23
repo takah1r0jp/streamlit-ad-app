@@ -13,24 +13,29 @@ st.set_page_config(
     page_title="AI異常検知プログラム生成アプリ", page_icon="🤖", layout="wide"
 )
 
-# CSSスタイルの追加
+# CSSスタイルの追加（ローカル環境対応）
 st.markdown(
     """
 <style>
+/* ベーススタイル */
 .step-container {
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--text-color, #e0e0e0);
     border-radius: 10px;
     padding: 15px;
     margin: 10px 0;
-    background-color: #f8f9fa;
+    background-color: var(--background-color, #f8f9fa);
+    color: var(--text-color, #000000);
+    transition: all 0.3s ease;
 }
 .step-active {
     border-color: #4CAF50;
-    background-color: #e8f5e9;
+    background-color: var(--step-active-bg, #e8f5e9);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.3);
 }
 .step-completed {
     border-color: #2196F3;
-    background-color: #e3f2fd;
+    background-color: var(--step-completed-bg, #e3f2fd);
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
 }
 .step-header {
     font-size: 18px;
@@ -38,6 +43,7 @@ st.markdown(
     margin-bottom: 10px;
     display: flex;
     align-items: center;
+    color: var(--text-color, #000000);
 }
 .step-number {
     background-color: #4CAF50;
@@ -58,6 +64,44 @@ st.markdown(
 .main-container {
     max-height: 100vh;
     overflow: hidden;
+}
+
+/* Streamlitテーマの色のみでダークモード判定 */
+[data-theme="dark"] {
+    --background-color: #2e2e2e;
+    --text-color: #ffffff;
+    --step-active-bg: #2e4d2e;
+    --step-completed-bg: #2e3a5c;
+}
+[data-theme="dark"] .step-container {
+    border-color: #4a4a4a;
+}
+[data-theme="dark"] .step-active {
+    border-color: #66bb6a;
+    box-shadow: 0 0 15px rgba(102, 187, 106, 0.4);
+}
+[data-theme="dark"] .step-completed {
+    border-color: #42a5f5;
+    box-shadow: 0 0 15px rgba(66, 165, 245, 0.4);
+}
+
+/* Streamlitの背景色を検出してダークモード判定 */
+.stApp[style*="rgb(14, 17, 23)"] {
+    --background-color: #2e2e2e;
+    --text-color: #ffffff;
+    --step-active-bg: #2e4d2e;
+    --step-completed-bg: #2e3a5c;
+}
+.stApp[style*="rgb(14, 17, 23)"] .step-container {
+    border-color: #4a4a4a;
+}
+.stApp[style*="rgb(14, 17, 23)"] .step-active {
+    border-color: #66bb6a;
+    box-shadow: 0 0 15px rgba(102, 187, 106, 0.4);
+}
+.stApp[style*="rgb(14, 17, 23)"] .step-completed {
+    border-color: #42a5f5;
+    box-shadow: 0 0 15px rgba(66, 165, 245, 0.4);
 }
 </style>
 """,
@@ -486,7 +530,6 @@ if current_generated_code or current_execution_result:
 if not (current_generated_code or current_execution_result):
     st.markdown("---")
     st.markdown("💡 **使い方**: 上記の1〜5のステップを順番に進めてください")
-    st.info("🔐 **セキュリティ**: このアプリはユーザー間でのデータ分離を実装しています")
 
     # セキュリティ状態の表示
     if st.checkbox("セキュリティ情報を表示", key="debug_security"):
