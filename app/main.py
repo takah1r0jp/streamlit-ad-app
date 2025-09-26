@@ -1,3 +1,4 @@
+import logging
 import os
 
 import streamlit as st
@@ -12,6 +13,8 @@ from utils.code_generator import generate_anomaly_detection_code
 st.set_page_config(
     page_title="AI異常検知プログラム生成アプリ", page_icon="🤖", layout="wide"
 )
+
+logger = logging.getLogger(__name__)
 
 # CSSスタイルの追加（ローカル環境対応）
 st.markdown(
@@ -129,13 +132,12 @@ def initialize_security_components():
 
         return security_manager, isolated_state
 
-    except Exception as e:
-        st.error(f"セキュリティ初期化エラー: {e}")
-        st.error("ページを再読み込みしてください")
+    except Exception:
+        logger.exception("セキュリティ初期化エラー")
+        st.error("セキュリティ初期化に失敗しました。ページを再読み込みしてください。")
 
-        # デバッグ情報
-        with st.expander("🔍 デバッグ情報"):
-            st.write("セッション状態:")
+        # デバッグ情報（開発者向けに限定）
+        with st.expander("🔍 詳細（開発者向け）"):
             debug_info = {
                 "session_initialized": st.session_state.get(
                     "session_initialized", False
@@ -143,7 +145,6 @@ def initialize_security_components():
                 "secure_session_id_exists": "secure_session_id" in st.session_state,
                 "session_key_exists": "session_key" in st.session_state,
                 "api_key_set": st.session_state.get("api_key_set", False),
-                "all_session_keys": list(st.session_state.keys()),
             }
             st.json(debug_info)
 
@@ -156,6 +157,7 @@ security_manager, isolated_state = initialize_security_components()
 # タイトル
 st.title("🤖 AI異常検知プログラム生成")
 st.markdown("**5つのステップで簡単に異常検知プログラムを生成・実行**")
+
 
 # メモリ使用状況の表示
 def show_memory_status():
@@ -301,8 +303,9 @@ with col1:
             isolated_state.set_uploaded_image_path(secure_file_path)
             st.success("✅ 画像が安全にアップロードされました")
             st.rerun()
-        except Exception as e:
-            st.error(f"❌ 画像アップロードエラー: {e}")
+        except Exception:
+            logger.exception("画像アップロードエラー")
+            st.error("❌ 画像のアップロードに失敗しました。もう一度お試しください。")
 
 # 中央カラム（ステップ3）
 with col2:
@@ -443,8 +446,11 @@ if generate_button and conditions_valid:
                 isolated_state.set_generated_code(generated_code)
                 st.success("✅ プログラム生成完了！")
                 st.rerun()
-        except Exception as e:
-            st.error(f"❌ エラーが発生しました: {str(e)}")
+        except ValueError as e:
+            st.warning(f"⚠️ 入力エラー: {str(e)}")
+        except Exception:
+            logger.exception("コード生成中にエラーが発生")
+            st.error("❌ コード生成に失敗しました。時間をおいて再試行してください。")
 
 # 実行処理 - セキュア版
 current_code = isolated_state.get_generated_code()
@@ -478,8 +484,11 @@ if execute_requested and current_code:
             st.success("✅ 実行完了！")
             isolated_state.set_execute_requested(False)
             st.rerun()
-        except Exception as e:
-            st.error(f"❌ 実行エラー: {str(e)}")
+        except Exception:
+            logger.exception("実行中にエラーが発生")
+            st.error(
+                "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
+            )
             isolated_state.set_execute_requested(False)
 
 # 結果表示エリア（画面下部）- セキュア版

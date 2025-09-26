@@ -16,6 +16,27 @@
 4. テスト / Lint
    - `uv run pytest -q`
    - `uv run ruff check .`（または `uv run flake8`）
+   # 1. 依存関係のインストール（CIと同じように）
+  pip install -r requirements.txt
+  pip install pytest pytest-cov ruff mypy
+
+  # 2. ruffによるlint・フォーマットチェック
+  ruff check app tests
+  ruff format --check app tests
+
+  # 3. 型チェック（mypyでエラーが出ても継続）
+  mypy app --ignore-missing-imports
+
+  # 4. pytestによるテスト実行（CIと同じオプション）
+  pytest tests/ -v --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing
+
+  または、すべてを一度に実行したい場合：
+
+  # まとめて実行
+  ruff check app tests && \
+  ruff format --check app tests && \
+  mypy app --ignore-missing-imports && \
+  pytest tests/ -v --cov=app --cov-report=term-missing
 5. コミット / プッシュ
    - `git add -A && git commit -m "feat: ..." && git push -u origin HEAD`
 6. PR 作成（GitHub）

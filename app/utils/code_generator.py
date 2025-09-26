@@ -157,21 +157,23 @@ def generate_anomaly_detection_code(
 
     except anthropic.APIConnectionError as e:
         logger.error(f"API接続エラー: {str(e)}")
-        raise ConnectionError(f"Anthropic APIへの接続に失敗しました: {str(e)}")
+        raise ConnectionError(
+            "Anthropic APIへの接続に失敗しました。時間をおいて再試行してください。"
+        )
     except anthropic.RateLimitError as e:
         logger.error(f"API制限エラー: {str(e)}")
         raise Exception(
-            f"API利用制限に達しました。しばらく待ってから再試行してください: {str(e)}"
+            "API利用制限に達しました。しばらく待ってから再試行してください。"
         )
     except anthropic.APIError as e:
         logger.error(f"API エラー: {str(e)}")
-        raise Exception(f"Anthropic APIエラー: {str(e)}")
+        raise Exception("Anthropic APIでエラーが発生しました。")
     except ValueError as e:
         logger.error(f"データ検証エラー: {str(e)}")
         raise e
     except Exception as e:
         logger.error(f"予期しないエラーが発生しました: {str(e)}")
-        raise Exception(f"コード生成中に予期しないエラーが発生しました: {str(e)}")
+        raise Exception("コード生成中に予期しないエラーが発生しました。")
 
 
 if __name__ == "__main__":
