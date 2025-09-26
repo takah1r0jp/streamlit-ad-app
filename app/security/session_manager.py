@@ -93,7 +93,7 @@ class SecureSessionManager:
             return True
 
         except Exception as e:
-            st.error(f"Failed to store API key securely: {e}")
+            st.error("Failed to store API key securely.")
             return False
 
     def get_api_key(self) -> str | None:
@@ -118,7 +118,7 @@ class SecureSessionManager:
             return api_key if api_key else None
 
         except Exception as e:
-            st.error(f"Failed to retrieve API key: {e}")
+            st.error("Failed to retrieve API key.")
             return None
 
     def clear_api_key(self) -> None:
@@ -208,7 +208,7 @@ class SecureSessionManager:
 
         except Exception as e:
             # Log error but don't raise - cleanup should be best effort
-            st.warning(f"Session cleanup warning: {e}")
+            st.warning("Session cleanup warning.")
 
     def get_session_info(self) -> dict:
         """

@@ -123,7 +123,7 @@ def execute_code(code, image_path=None, box_threshold=0.3):
     except Exception as e:
         logger.error(f"コード実行中にエラーが発生: {str(e)}")
         return {
-            "message": f"システムエラーが発生しました: {str(e)}",
+            "message": "システムエラーが発生しました。時間をおいて再試行してください。",
             "status": "error",
             "error_type": "system",
         }
