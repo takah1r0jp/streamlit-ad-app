@@ -1,8 +1,8 @@
+import logging
 import os
 
 import streamlit as st
 from PIL import Image
-import logging
 
 # セキュリティモジュールのインポート
 from security import IsolatedSessionState, SecureSessionManager
@@ -132,7 +132,7 @@ def initialize_security_components():
 
         return security_manager, isolated_state
 
-    except Exception as e:
+    except Exception:
         logger.exception("セキュリティ初期化エラー")
         st.error("セキュリティ初期化に失敗しました。ページを再読み込みしてください。")
 
@@ -157,6 +157,7 @@ security_manager, isolated_state = initialize_security_components()
 # タイトル
 st.title("🤖 AI異常検知プログラム生成")
 st.markdown("**5つのステップで簡単に異常検知プログラムを生成・実行**")
+
 
 # メモリ使用状況の表示
 def show_memory_status():
@@ -302,7 +303,7 @@ with col1:
             isolated_state.set_uploaded_image_path(secure_file_path)
             st.success("✅ 画像が安全にアップロードされました")
             st.rerun()
-        except Exception as e:
+        except Exception:
             logger.exception("画像アップロードエラー")
             st.error("❌ 画像のアップロードに失敗しました。もう一度お試しください。")
 
@@ -447,7 +448,7 @@ if generate_button and conditions_valid:
                 st.rerun()
         except ValueError as e:
             st.warning(f"⚠️ 入力エラー: {str(e)}")
-        except Exception as e:
+        except Exception:
             logger.exception("コード生成中にエラーが発生")
             st.error("❌ コード生成に失敗しました。時間をおいて再試行してください。")
 
@@ -483,9 +484,11 @@ if execute_requested and current_code:
             st.success("✅ 実行完了！")
             isolated_state.set_execute_requested(False)
             st.rerun()
-        except Exception as e:
+        except Exception:
             logger.exception("実行中にエラーが発生")
-            st.error("❌ 実行中にエラーが発生しました。設定を見直して再試行してください。")
+            st.error(
+                "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
+            )
             isolated_state.set_execute_requested(False)
 
 # 結果表示エリア（画面下部）- セキュア版

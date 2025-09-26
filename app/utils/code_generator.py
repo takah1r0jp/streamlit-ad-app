@@ -157,10 +157,14 @@ def generate_anomaly_detection_code(
 
     except anthropic.APIConnectionError as e:
         logger.error(f"API接続エラー: {str(e)}")
-        raise ConnectionError("Anthropic APIへの接続に失敗しました。時間をおいて再試行してください。")
+        raise ConnectionError(
+            "Anthropic APIへの接続に失敗しました。時間をおいて再試行してください。"
+        )
     except anthropic.RateLimitError as e:
         logger.error(f"API制限エラー: {str(e)}")
-        raise Exception("API利用制限に達しました。しばらく待ってから再試行してください。")
+        raise Exception(
+            "API利用制限に達しました。しばらく待ってから再試行してください。"
+        )
     except anthropic.APIError as e:
         logger.error(f"API エラー: {str(e)}")
         raise Exception("Anthropic APIでエラーが発生しました。")

@@ -92,7 +92,7 @@ class SecureSessionManager:
 
             return True
 
-        except Exception as e:
+        except Exception:
             st.error("Failed to store API key securely.")
             return False
 
@@ -117,7 +117,7 @@ class SecureSessionManager:
 
             return api_key if api_key else None
 
-        except Exception as e:
+        except Exception:
             st.error("Failed to retrieve API key.")
             return None
 
@@ -206,7 +206,7 @@ class SecureSessionManager:
                 if key in st.session_state:
                     del st.session_state[key]
 
-        except Exception as e:
+        except Exception:
             # Log error but don't raise - cleanup should be best effort
             st.warning("Session cleanup warning.")
 
