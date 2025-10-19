@@ -419,7 +419,9 @@ with col3:
                 st.warning(f"⚠️ 入力エラー: {str(e)}")
             except Exception:
                 logger.exception("コード生成中にエラーが発生")
-                st.error("❌ コード生成に失敗しました。時間をおいて再試行してください。")
+                st.error(
+                    "❌ コード生成に失敗しました。時間をおいて再試行してください。"
+                )
 
     # 生成されたコードをボタン直下に表示
     if current_generated_code:
