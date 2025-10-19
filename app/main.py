@@ -370,6 +370,9 @@ with col2:
 
 # 右カラム（ステップ4-5）
 with col3:
+    # 生成済みコードを取得
+    current_generated_code = isolated_state.get_generated_code()
+
     # ステップ4: プログラム生成
     step4_status = get_step_status(
         4, bool(new_api_key), image_exists, conditions_valid, code_exists
@@ -380,6 +383,73 @@ with col3:
         <div class="step-header">
             <div class="step-number">4</div>
             プログラム生成
+        </div>
+    </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
+    generate_button = st.button(
+        "🚀 プログラム生成",
+        type="primary",
+        disabled=not (new_api_key and conditions_valid),
+        use_container_width=True,
+    )
+
+    # 生成処理（ボタン直下で実行）
+    if generate_button and conditions_valid:
+        combined_conditions = "\n".join(
+            [f"- {condition.strip()}" for condition in valid_conditions]
+        )
+
+        with st.spinner("🤖 AIがプログラムを生成中..."):
+            try:
+                # セキュアなAPIキー取得
+                secure_api_key = security_manager.get_api_key()
+                if not secure_api_key:
+                    st.error("❌ APIキーが設定されていません")
+                else:
+                    generated_code = generate_anomaly_detection_code(
+                        combined_conditions, secure_api_key
+                    )
+                    isolated_state.set_generated_code(generated_code)
+                    st.success("✅ プログラム生成完了！")
+                    st.rerun()
+            except ValueError as e:
+                st.warning(f"⚠️ 入力エラー: {str(e)}")
+            except Exception:
+                logger.exception("コード生成中にエラーが発生")
+                st.error("❌ コード生成に失敗しました。時間をおいて再試行してください。")
+
+    # 生成されたコードをボタン直下に表示
+    if current_generated_code:
+        st.markdown("##### 📝 生成されたコード")
+        with st.expander("コードを表示", expanded=True):
+            st.code(
+                current_generated_code,
+                language="python",
+                line_numbers=True,
+            )
+
+        st.download_button(
+            label="📥 ダウンロード",
+            data=current_generated_code,
+            file_name="generated_program.py",
+            mime="text/plain",
+            use_container_width=True,
+            key="download_code_inline",
+        )
+
+    # ステップ5: プログラム実行
+    step5_status = get_step_status(
+        5, bool(new_api_key), image_exists, conditions_valid, code_exists
+    )
+    st.markdown(
+        f"""
+    <div class="step-container step-{step5_status}">
+        <div class="step-header">
+            <div class="step-number">5</div>
+            プログラム実行
         </div>
     </div>
     """,
@@ -400,57 +470,9 @@ with col3:
     if new_threshold != current_threshold:
         isolated_state.set_box_threshold(new_threshold)
 
-    generate_button = st.button(
-        "🚀 プログラム生成",
-        type="primary",
-        disabled=not (new_api_key and conditions_valid),
-        use_container_width=True,
-    )
-
-    # ステップ5: プログラム実行
-    step5_status = get_step_status(
-        5, bool(new_api_key), image_exists, conditions_valid, code_exists
-    )
-    st.markdown(
-        f"""
-    <div class="step-container step-{step5_status}">
-        <div class="step-header">
-            <div class="step-number">5</div>
-            プログラム実行
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
     execute_button = st.button(
         "▶️ 実行", type="primary", disabled=not code_exists, use_container_width=True
     )
-
-# 生成処理
-if generate_button and conditions_valid:
-    combined_conditions = "\n".join(
-        [f"- {condition.strip()}" for condition in valid_conditions]
-    )
-
-    with st.spinner("🤖 AIがプログラムを生成中..."):
-        try:
-            # セキュアなAPIキー取得
-            secure_api_key = security_manager.get_api_key()
-            if not secure_api_key:
-                st.error("❌ APIキーが設定されていません")
-            else:
-                generated_code = generate_anomaly_detection_code(
-                    combined_conditions, secure_api_key
-                )
-                isolated_state.set_generated_code(generated_code)
-                st.success("✅ プログラム生成完了！")
-                st.rerun()
-        except ValueError as e:
-            st.warning(f"⚠️ 入力エラー: {str(e)}")
-        except Exception:
-            logger.exception("コード生成中にエラーが発生")
-            st.error("❌ コード生成に失敗しました。時間をおいて再試行してください。")
 
 # 実行処理 - セキュア版
 current_code = isolated_state.get_generated_code()
