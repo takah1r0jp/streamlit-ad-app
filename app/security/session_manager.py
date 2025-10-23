@@ -210,26 +210,6 @@ class SecureSessionManager:
             # Log error but don't raise - cleanup should be best effort
             st.warning("Session cleanup warning.")
 
-    def get_session_info(self) -> dict:
-        """
-        Get information about the current session for debugging.
-
-        Returns:
-            Dictionary with session information (no sensitive data)
-        """
-        session_id = st.session_state.get("secure_session_id", "Not initialized")
-
-        return {
-            "session_id_preview": session_id[:8] + "..."
-            if len(session_id) > 8
-            else session_id,
-            "api_key_set": st.session_state.get("api_key_set", False),
-            "temp_dir_exists": os.path.exists(
-                st.session_state.get("secure_temp_dir", "")
-            ),
-            "session_initialized": st.session_state.get("session_initialized", False),
-        }
-
 
 class SecurityError(Exception):
     """Raised when a security violation is detected."""

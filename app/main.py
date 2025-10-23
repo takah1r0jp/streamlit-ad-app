@@ -135,19 +135,6 @@ def initialize_security_components():
     except Exception:
         logger.exception("セキュリティ初期化エラー")
         st.error("セキュリティ初期化に失敗しました。ページを再読み込みしてください。")
-
-        # デバッグ情報（開発者向けに限定）
-        with st.expander("🔍 詳細（開発者向け）"):
-            debug_info = {
-                "session_initialized": st.session_state.get(
-                    "session_initialized", False
-                ),
-                "secure_session_id_exists": "secure_session_id" in st.session_state,
-                "session_key_exists": "session_key" in st.session_state,
-                "api_key_set": st.session_state.get("api_key_set", False),
-            }
-            st.json(debug_info)
-
         st.stop()
 
 
@@ -563,15 +550,3 @@ if current_generated_code or current_execution_result:
 if not (current_generated_code or current_execution_result):
     st.markdown("---")
     st.markdown("💡 **使い方**: 上記の1〜5のステップを順番に進めてください")
-
-    # セキュリティ状態の表示
-    if st.checkbox("セキュリティ情報を表示", key="debug_security"):
-        with st.expander("セキュリティ状態"):
-            security_info = security_manager.get_session_info()
-            session_summary = isolated_state.get_session_summary()
-
-            col_sec1, col_sec2 = st.columns(2)
-            with col_sec1:
-                st.json(security_info)
-            with col_sec2:
-                st.json(session_summary)
