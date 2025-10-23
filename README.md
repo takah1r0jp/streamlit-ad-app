@@ -63,7 +63,5 @@ export ANTHROPIC_API_KEY="your_api_key_here"
 
 ## 📚 ドキュメント
 
-- 開発フロー: `docs/development-flow.md`
-- プロジェクト概要: `docs/project-overview.md`
-- Cloud Run セットアップ: `docs/cloud-run-setup.md`
-- デバッグ手順: `docs/debug-instructions.md`
+- プロジェクト概要: [`docs/project-overview.md`](docs/project-overview.md)
+- Cloud Run セットアップ: [`docs/cloud-run-setup.md`](docs/cloud-run-setup.md)

@@ -151,6 +151,13 @@ docs/_build/
 docs/.doctrees/
 .sphinx/
 
+# Development and internal documentation
+docs/development-flow.md
+docs/debug-instructions.md
+docs/DEBUG_INSTRUCTIONS.md
+docs/security-audit-report.md
+docs/CLOUD_RUN_SETUP.md
+
 # ===========================================
 # Logs
 # ===========================================
