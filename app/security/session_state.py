@@ -155,26 +155,6 @@ class IsolatedSessionState:
         session_keys = [key for key in all_keys if key.startswith(self.key_prefix)]
         return session_keys
 
-    def get_session_summary(self) -> dict[str, Any]:
-        """
-        Get a summary of the current session state (for debugging).
-
-        Returns:
-            Dictionary with session summary (no sensitive data)
-        """
-        return {
-            "session_id_preview": self.session_id[:8] + "...",
-            "has_generated_code": bool(self.get_generated_code()),
-            "has_uploaded_image": bool(self.get_uploaded_image_path()),
-            "has_execution_result": bool(self.get_execution_result()),
-            "num_conditions": len(
-                [c for c in self.get_normal_conditions() if c.strip()]
-            ),
-            "box_threshold": self.get_box_threshold(),
-            "execute_requested": self.get_execute_requested(),
-            "total_session_keys": len(self.get_all_session_keys()),
-        }
-
     def migrate_from_global_state(self) -> None:
         """
         Migrate data from old global session state to isolated state.
