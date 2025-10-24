@@ -8,7 +8,28 @@
 import json
 from pathlib import Path
 
+
+def _get_app_root() -> Path:
+    """
+    アプリケーションのルートディレクトリを取得
+
+    ローカル環境とデプロイ環境の両方で正しく動作するように、
+    app/utils/demo_data.py からルートを探索する
+    """
+    current_file = Path(__file__).resolve()
+    # __file__ は app/utils/demo_data.py なので、2つ上に移動して app/ を取得
+    app_dir = current_file.parent.parent
+
+    # デプロイ環境の特殊ケース: /app/app/utils/demo_data.py の場合
+    # app/ が2回続く場合は1つ上のディレクトリを使用
+    if app_dir.name == "app" and app_dir.parent.name == "app":
+        return app_dir.parent
+
+    return app_dir
+
+
 # デモモードの定数
+_APP_ROOT = _get_app_root()
 DEMO_IMAGE_PATH = Path(__file__).parent / "apple_strawberry.png"
 DEMO_CONDITION = "画像に2つのリンゴがあること"
 DEMO_BOX_THRESHOLD = 0.35
@@ -65,10 +86,15 @@ def get_demo_generated_code() -> str:
     Raises:
         FileNotFoundError: デモコードファイルが見つからない場合
     """
-    demo_code_path = Path(__file__).parent.parent / "demo" / "generated_code.py"
+    # _APP_ROOT は既に app/ ディレクトリを指しているので、demo/ を直接参照
+    demo_code_path = _APP_ROOT / "demo" / "generated_code.py"
 
     if not demo_code_path.exists():
-        raise FileNotFoundError(f"デモコードファイルが見つかりません: {demo_code_path}")
+        raise FileNotFoundError(
+            f"デモコードファイルが見つかりません: {demo_code_path}\n"
+            f"現在のファイル位置: {Path(__file__).resolve()}\n"
+            f"検出されたアプリルート: {_APP_ROOT}"
+        )
 
     return demo_code_path.read_text(encoding="utf-8")
 
@@ -84,10 +110,15 @@ def get_demo_execution_result() -> dict:
         FileNotFoundError: デモ結果ファイルが見つからない場合
         json.JSONDecodeError: JSON解析エラー
     """
-    demo_result_path = Path(__file__).parent.parent / "demo" / "execution_result.json"
+    # _APP_ROOT は既に app/ ディレクトリを指しているので、demo/ を直接参照
+    demo_result_path = _APP_ROOT / "demo" / "execution_result.json"
 
     if not demo_result_path.exists():
-        raise FileNotFoundError(f"デモ結果ファイルが見つかりません: {demo_result_path}")
+        raise FileNotFoundError(
+            f"デモ結果ファイルが見つかりません: {demo_result_path}\n"
+            f"現在のファイル位置: {Path(__file__).resolve()}\n"
+            f"検出されたアプリルート: {_APP_ROOT}"
+        )
 
     result_json = demo_result_path.read_text(encoding="utf-8")
     return json.loads(result_json)
