@@ -280,8 +280,8 @@ def get_step_status(step_num, api_key, image_exists, conditions_valid, code_exis
     return "pending"
 
 
-# メイン3カラムレイアウト
-col1, col2, col3 = st.columns([1, 1.2, 1])
+# メイン3カラムレイアウト（2:3:5の比率）
+col1, col2, col3 = st.columns([2, 3, 5])
 
 # セキュアなAPIキーの取得と状態確認
 api_key = security_manager.get_api_key() or ""
@@ -372,20 +372,23 @@ with col2:
     current_conditions = isolated_state.get_normal_conditions()
     updated_conditions = []
 
-    # デモモード中は条件入力を無効化
-    for i, condition in enumerate(current_conditions):
-        updated_condition = st.text_area(
-            f"条件 {i + 1}",
-            value=condition,
-            height=80,
-            placeholder="例: 画像に2つのリンゴがあること",
-            key=f"condition_secure_{i}",
-            disabled=st.session_state.demo_mode,
-        )
-        updated_conditions.append(updated_condition)
-
+    # デモモード中は読み取り専用で明示的に表示
     if st.session_state.demo_mode:
-        st.info("📺 デモモード: サンプル条件を使用します")
+        st.info("📺 デモモード: 以下のサンプル条件で動作します")
+        for i, condition in enumerate(current_conditions):
+            st.markdown(f"**条件 {i + 1}:**")
+            st.code(condition, language="text")
+            updated_conditions.append(condition)
+    else:
+        for i, condition in enumerate(current_conditions):
+            updated_condition = st.text_area(
+                f"条件 {i + 1}",
+                value=condition,
+                height=80,
+                placeholder="例: 画像に2つのリンゴがあること",
+                key=f"condition_secure_{i}",
+            )
+            updated_conditions.append(updated_condition)
 
     # 条件が変更された場合、セキュアストレージに保存
     if updated_conditions != current_conditions:
@@ -495,12 +498,27 @@ with col3:
                         "❌ コード生成に失敗しました。時間をおいて再試行してください。"
                     )
 
-    # 生成されたコードをボタン直下に表示
+    # 生成されたコードをボタン直下に表示（execute_command関数のみ）
     if current_generated_code:
         st.markdown("##### 📝 生成されたコード")
+
+        # execute_command関数のみを抽出
+        import re
+
+        execute_command_match = re.search(
+            r"(def execute_command\([^)]*\):.*?)(?=\n(?:def |class |\Z))",
+            current_generated_code,
+            re.DOTALL,
+        )
+
+        if execute_command_match:
+            display_code = execute_command_match.group(1).rstrip()
+        else:
+            display_code = current_generated_code
+
         with st.expander("コードを表示", expanded=True):
             st.code(
-                current_generated_code,
+                display_code,
                 language="python",
                 line_numbers=True,
             )
@@ -561,95 +579,70 @@ if execute_button and current_code:
     st.rerun()
 
 if execute_requested and current_code:
-    # デモモード: 事前実行結果を使用
-    if st.session_state.demo_mode:
-        with st.spinner("🎬 デモ実行結果を読み込み中..."):
-            try:
-                demo_result = get_demo_execution_result()
-                isolated_state.set_execution_result(demo_result)
-                st.success("✅ デモ実行完了！")
-                isolated_state.set_execute_requested(False)
-                st.rerun()
-            except Exception as e:
-                st.error(f"❌ デモ実行結果読み込みエラー: {e}")
-                isolated_state.set_execute_requested(False)
-    # 通常モード: 実際に実行
-    else:
-        with st.spinner("▶️ プログラムを実行中..."):
-            try:
-                # セキュアな画像パス取得
-                image_path = isolated_state.get_uploaded_image_path()
-                if not image_path or not os.path.exists(image_path):
-                    default_image_path = os.path.join(
-                        os.path.dirname(__file__), "utils", "apple_strawberry.png"
+    with col3:
+        # デモモード: 事前実行結果を使用
+        if st.session_state.demo_mode:
+            with st.spinner("🎬 デモ実行結果を読み込み中..."):
+                try:
+                    demo_result = get_demo_execution_result()
+                    isolated_state.set_execution_result(demo_result)
+                    st.success("✅ デモ実行完了！")
+                    isolated_state.set_execute_requested(False)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ デモ実行結果読み込みエラー: {e}")
+                    isolated_state.set_execute_requested(False)
+        # 通常モード: 実際に実行
+        else:
+            with st.spinner("▶️ プログラムを実行中..."):
+                try:
+                    # セキュアな画像パス取得
+                    image_path = isolated_state.get_uploaded_image_path()
+                    if not image_path or not os.path.exists(image_path):
+                        default_image_path = os.path.join(
+                            os.path.dirname(__file__), "utils", "apple_strawberry.png"
+                        )
+                        if os.path.exists(default_image_path):
+                            image_path = default_image_path
+                        else:
+                            st.error("画像が見つかりません。")
+                            st.stop()
+
+                    execution_result = execute_code(
+                        current_code,
+                        image_path,
+                        isolated_state.get_box_threshold(),
                     )
-                    if os.path.exists(default_image_path):
-                        image_path = default_image_path
-                    else:
-                        st.error("画像が見つかりません。")
-                        st.stop()
+                    isolated_state.set_execution_result(execution_result)
+                    st.success("✅ 実行完了！")
+                    isolated_state.set_execute_requested(False)
+                    st.rerun()
+                except Exception:
+                    logger.exception("実行中にエラーが発生")
+                    st.error(
+                        "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
+                    )
+                    isolated_state.set_execute_requested(False)
 
-                execution_result = execute_code(
-                    current_code,
-                    image_path,
-                    isolated_state.get_box_threshold(),
-                )
-                isolated_state.set_execution_result(execution_result)
-                st.success("✅ 実行完了！")
-                isolated_state.set_execute_requested(False)
-                st.rerun()
-            except Exception:
-                logger.exception("実行中にエラーが発生")
-                st.error(
-                    "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
-                )
-                isolated_state.set_execute_requested(False)
+# 実行結果表示 - 実行ボタンの直下に表示
+with col3:
+    current_execution_result = isolated_state.get_execution_result()
+    if current_execution_result:
+        st.markdown("#### 📊 実行結果")
+        result = current_execution_result
 
-# 結果表示エリア（画面下部）- セキュア版
-current_generated_code = isolated_state.get_generated_code()
-current_execution_result = isolated_state.get_execution_result()
+        if "status" in result:
+            if result["status"] == "success":
+                st.success(f"🎉 正常: {result.get('message', '異常なし')}")
+            elif result["status"] == "failure":
+                st.warning(f"⚠️ 異常: {result.get('message', '異常検出')}")
+            else:
+                st.error(f"❌ エラー: {result.get('message', 'システムエラー')}")
 
-if current_generated_code or current_execution_result:
-    st.markdown("---")
-    result_col1, result_col2 = st.columns(2)
-
-    with result_col1:
-        if current_generated_code:
-            st.subheader("📝 生成されたコード")
-            with st.expander("コードを表示", expanded=False):
-                st.code(
-                    current_generated_code,
-                    language="python",
-                    line_numbers=True,
-                )
-
-            st.download_button(
-                label="📥 コードをダウンロード",
-                data=current_generated_code,
-                file_name="generated_program.py",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_code_secure",
-            )
-
-    with result_col2:
-        if current_execution_result:
-            st.subheader("📊 実行結果")
-            result = current_execution_result
-
-            if "status" in result:
-                if result["status"] == "success":
-                    st.success(f"🎉 正常: {result.get('message', '異常なし')}")
-                elif result["status"] == "failure":
-                    st.warning(f"⚠️ 異常: {result.get('message', '異常検出')}")
-                else:
-                    st.error(f"❌ エラー: {result.get('message', 'システムエラー')}")
-
-            if "output_text" in result and result["output_text"]:
-                with st.expander("詳細出力", expanded=False):
-                    st.code(result["output_text"], language="text")
+        if "output_text" in result and result["output_text"]:
+            with st.expander("詳細出力", expanded=True):
+                st.code(result["output_text"], language="text")
 
 # フッター
-if not (current_generated_code or current_execution_result):
-    st.markdown("---")
-    st.markdown("💡 **使い方**: 上記の1〜5のステップを順番に進めてください")
+st.markdown("---")
+st.markdown("💡 **使い方**: 上記のステップを順番に進めてください")
