@@ -10,6 +10,8 @@ from utils.code_executor import check_memory_usage, execute_code
 from utils.code_generator import generate_anomaly_detection_code
 from utils.demo_data import (
     get_demo_condition,
+    get_demo_execution_result,
+    get_demo_generated_code,
     is_demo_mode_available,
 )
 
@@ -391,10 +393,15 @@ with col2:
         # 条件が変更されたら即座に再実行して状態を更新
         st.rerun()
 
-    # 条件の追加・削除（コンパクト）
+    # 条件の追加・削除（コンパクト）- デモモード中は無効
     col_add, col_remove = st.columns([1, 1])
     with col_add:
-        if st.button("➕ 追加", use_container_width=True, key="add_condition_secure"):
+        if st.button(
+            "➕ 追加",
+            use_container_width=True,
+            key="add_condition_secure",
+            disabled=st.session_state.demo_mode,
+        ):
             new_conditions = isolated_state.get_normal_conditions()
             new_conditions.append("")
             isolated_state.set_normal_conditions(new_conditions)
@@ -402,7 +409,10 @@ with col2:
     with col_remove:
         if (
             st.button(
-                "➖ 削除", use_container_width=True, key="remove_condition_secure"
+                "➖ 削除",
+                use_container_width=True,
+                key="remove_condition_secure",
+                disabled=st.session_state.demo_mode,
             )
             and len(isolated_state.get_normal_conditions()) > 1
         ):
@@ -448,30 +458,42 @@ with col3:
 
     # 生成処理（ボタン直下で実行）
     if generate_button and conditions_valid:
-        combined_conditions = "\n".join(
-            [f"- {condition.strip()}" for condition in valid_conditions]
-        )
-
-        with st.spinner("🤖 AIがプログラムを生成中..."):
-            try:
-                # セキュアなAPIキー取得
-                secure_api_key = security_manager.get_api_key()
-                if not secure_api_key:
-                    st.error("❌ APIキーが設定されていません")
-                else:
-                    generated_code = generate_anomaly_detection_code(
-                        combined_conditions, secure_api_key
-                    )
-                    isolated_state.set_generated_code(generated_code)
-                    st.success("✅ プログラム生成完了！")
+        # デモモード: 事前生成コードを使用
+        if st.session_state.demo_mode:
+            with st.spinner("🎬 デモコードを読み込み中..."):
+                try:
+                    demo_code = get_demo_generated_code()
+                    isolated_state.set_generated_code(demo_code)
+                    st.success("✅ デモコードを読み込みました")
                     st.rerun()
-            except ValueError as e:
-                st.warning(f"⚠️ 入力エラー: {str(e)}")
-            except Exception:
-                logger.exception("コード生成中にエラーが発生")
-                st.error(
-                    "❌ コード生成に失敗しました。時間をおいて再試行してください。"
-                )
+                except Exception as e:
+                    st.error(f"❌ デモコード読み込みエラー: {e}")
+        # 通常モード: API呼び出し
+        else:
+            combined_conditions = "\n".join(
+                [f"- {condition.strip()}" for condition in valid_conditions]
+            )
+
+            with st.spinner("🤖 AIがプログラムを生成中..."):
+                try:
+                    # セキュアなAPIキー取得
+                    secure_api_key = security_manager.get_api_key()
+                    if not secure_api_key:
+                        st.error("❌ APIキーが設定されていません")
+                    else:
+                        generated_code = generate_anomaly_detection_code(
+                            combined_conditions, secure_api_key
+                        )
+                        isolated_state.set_generated_code(generated_code)
+                        st.success("✅ プログラム生成完了！")
+                        st.rerun()
+                except ValueError as e:
+                    st.warning(f"⚠️ 入力エラー: {str(e)}")
+                except Exception:
+                    logger.exception("コード生成中にエラーが発生")
+                    st.error(
+                        "❌ コード生成に失敗しました。時間をおいて再試行してください。"
+                    )
 
     # 生成されたコードをボタン直下に表示
     if current_generated_code:
@@ -539,35 +561,49 @@ if execute_button and current_code:
     st.rerun()
 
 if execute_requested and current_code:
-    with st.spinner("▶️ プログラムを実行中..."):
-        try:
-            # セキュアな画像パス取得
-            image_path = isolated_state.get_uploaded_image_path()
-            if not image_path or not os.path.exists(image_path):
-                default_image_path = os.path.join(
-                    os.path.dirname(__file__), "utils", "apple_strawberry.png"
-                )
-                if os.path.exists(default_image_path):
-                    image_path = default_image_path
-                else:
-                    st.error("画像が見つかりません。")
-                    st.stop()
+    # デモモード: 事前実行結果を使用
+    if st.session_state.demo_mode:
+        with st.spinner("🎬 デモ実行結果を読み込み中..."):
+            try:
+                demo_result = get_demo_execution_result()
+                isolated_state.set_execution_result(demo_result)
+                st.success("✅ デモ実行完了！")
+                isolated_state.set_execute_requested(False)
+                st.rerun()
+            except Exception as e:
+                st.error(f"❌ デモ実行結果読み込みエラー: {e}")
+                isolated_state.set_execute_requested(False)
+    # 通常モード: 実際に実行
+    else:
+        with st.spinner("▶️ プログラムを実行中..."):
+            try:
+                # セキュアな画像パス取得
+                image_path = isolated_state.get_uploaded_image_path()
+                if not image_path or not os.path.exists(image_path):
+                    default_image_path = os.path.join(
+                        os.path.dirname(__file__), "utils", "apple_strawberry.png"
+                    )
+                    if os.path.exists(default_image_path):
+                        image_path = default_image_path
+                    else:
+                        st.error("画像が見つかりません。")
+                        st.stop()
 
-            execution_result = execute_code(
-                current_code,
-                image_path,
-                isolated_state.get_box_threshold(),
-            )
-            isolated_state.set_execution_result(execution_result)
-            st.success("✅ 実行完了！")
-            isolated_state.set_execute_requested(False)
-            st.rerun()
-        except Exception:
-            logger.exception("実行中にエラーが発生")
-            st.error(
-                "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
-            )
-            isolated_state.set_execute_requested(False)
+                execution_result = execute_code(
+                    current_code,
+                    image_path,
+                    isolated_state.get_box_threshold(),
+                )
+                isolated_state.set_execution_result(execution_result)
+                st.success("✅ 実行完了！")
+                isolated_state.set_execute_requested(False)
+                st.rerun()
+            except Exception:
+                logger.exception("実行中にエラーが発生")
+                st.error(
+                    "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
+                )
+                isolated_state.set_execute_requested(False)
 
 # 結果表示エリア（画面下部）- セキュア版
 current_generated_code = isolated_state.get_generated_code()
