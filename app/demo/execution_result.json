@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "anomaly_score": 0.0,
+  "is_anomaly": false,
+  "details": "正常: リンゴが2個検出されました（期待値: 2個）",
+  "detected_objects": [
+    {
+      "type": "apple",
+      "count": 2,
+      "positions": [
+        {
+          "left": 145,
+          "lower": 98,
+          "right": 312,
+          "upper": 265
+        },
+        {
+          "left": 387,
+          "lower": 112,
+          "right": 548,
+          "upper": 279
+        }
+      ],
+      "confidence": [0.87, 0.85]
+    }
+  ],
+  "execution_time": 1.23,
+  "output_text": "検出結果: apple x2\n\n物体検出が完了しました。\nリンゴが2個検出され、正常品の条件を満たしています。"
+}

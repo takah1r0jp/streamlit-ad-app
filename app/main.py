@@ -8,6 +8,12 @@ from PIL import Image
 from security import IsolatedSessionState, SecureSessionManager
 from utils.code_executor import check_memory_usage, execute_code
 from utils.code_generator import generate_anomaly_detection_code
+from utils.demo_data import (
+    get_demo_condition,
+    get_demo_execution_result,
+    get_demo_generated_code,
+    is_demo_mode_available,
+)
 
 # ページ設定
 st.set_page_config(
@@ -143,7 +149,77 @@ security_manager, isolated_state = initialize_security_components()
 
 # タイトル
 st.title("🤖 AI異常検知プログラム生成")
-st.markdown("**5つのステップで簡単に異常検知プログラムを生成・実行**")
+st.markdown("**簡単なステップで異常検知プログラムを生成・実行**")
+
+# デモモードの初期化
+if "demo_mode" not in st.session_state:
+    st.session_state.demo_mode = False
+
+# Step 0: API設定（2カラムレイアウト）
+st.markdown("### 📝 Step 0: API設定")
+
+col_api, col_demo = st.columns([2, 1])
+
+with col_api:
+    st.markdown("**🔑 APIキーを使用**")
+
+    # デモモード中はAPIキー入力を無効化
+    api_key_input = st.text_input(
+        "Anthropic API Key",
+        type="password",
+        placeholder="sk-ant-...",
+        help="APIキーを入力すると、独自の条件でプログラムを生成できます",
+        disabled=st.session_state.demo_mode,
+        key="api_key_input_step0",
+    )
+
+    if api_key_input and not st.session_state.demo_mode:
+        if security_manager.set_api_key(api_key_input):
+            st.success("✅ APIキーが安全に設定されました")
+        else:
+            st.error("❌ APIキーの保存に失敗しました")
+    elif not st.session_state.demo_mode and not api_key_input:
+        st.info("🔒 APIキーはセッション内でのみ暗号化保存されます")
+
+with col_demo:
+    st.markdown("**🎬 デモモード**")
+    st.caption("APIキー不要で体験可能")
+
+    # デモモードの利用可能性チェック
+    demo_available, demo_error = is_demo_mode_available()
+
+    if not st.session_state.demo_mode:
+        if st.button(
+            "デモモードで試す",
+            use_container_width=True,
+            type="primary",
+            disabled=not demo_available,
+        ):
+            st.session_state.demo_mode = True
+            # デモモードのデフォルト値を設定
+            isolated_state.set_normal_conditions([get_demo_condition()])
+            st.rerun()
+
+        if not demo_available:
+            st.error(f"❌ {demo_error}")
+    else:
+        st.success("✅ デモモード実行中")
+        if st.button("通常モードに戻る", use_container_width=True):
+            st.session_state.demo_mode = False
+            # デモモード関連の状態をクリア
+            isolated_state.set_generated_code(None)
+            isolated_state.set_execution_result(None)
+            isolated_state.set_normal_conditions([])
+            st.rerun()
+
+# デモモード中の情報表示
+if st.session_state.demo_mode:
+    st.info(
+        "📺 **デモモード**: 事前に用意されたサンプルで機能を体験できます。"
+        "実際に使用するにはAnthropic APIキーが必要です。"
+    )
+
+st.markdown("---")
 
 
 # メモリ使用状況の表示
@@ -204,8 +280,8 @@ def get_step_status(step_num, api_key, image_exists, conditions_valid, code_exis
     return "pending"
 
 
-# メイン3カラムレイアウト
-col1, col2, col3 = st.columns([1, 1.2, 1])
+# メイン3カラムレイアウト（2:3:5の比率）
+col1, col2, col3 = st.columns([2, 3, 5])
 
 # セキュアなAPIキーの取得と状態確認
 api_key = security_manager.get_api_key() or ""
@@ -216,53 +292,21 @@ valid_conditions = [c.strip() for c in normal_conditions if c.strip()]
 conditions_valid = len(valid_conditions) > 0
 code_exists = bool(isolated_state.get_generated_code())
 
-# 左カラム（ステップ1-3）
+# 左カラム（ステップ1-2）
 with col1:
-    # ステップ1: APIキー設定
+    # ステップ1: 画像選択
     step1_status = get_step_status(
-        1, api_key, image_exists, conditions_valid, code_exists
+        2,
+        api_key or st.session_state.demo_mode,
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
     <div class="step-container step-{step1_status}">
         <div class="step-header">
             <div class="step-number">1</div>
-            APIキー設定
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-    new_api_key = st.text_input(
-        "Anthropic APIキーを入力",
-        type="password",
-        value=api_key,
-        key="api_input_secure",
-    )
-    if new_api_key != api_key:
-        # セキュアなAPIキー保存（環境変数は使用しない）
-        if security_manager.set_api_key(new_api_key):
-            st.success("🔐 APIキーが安全に保存されました")
-            st.rerun()
-        else:
-            st.error("❌ APIキーの保存に失敗しました")
-
-    if not new_api_key:
-        st.warning("⚠️ APIキーを入力してください")
-        st.info("🔒 APIキーはセッション内でのみ暗号化保存されます")
-    else:
-        st.success("✅ APIキーが安全に設定されました")
-
-    # ステップ2: 画像選択
-    step2_status = get_step_status(
-        2, bool(new_api_key), image_exists, conditions_valid, code_exists
-    )
-    st.markdown(
-        f"""
-    <div class="step-container step-{step2_status}">
-        <div class="step-header">
-            <div class="step-number">2</div>
             画像選択
         </div>
     </div>
@@ -276,35 +320,47 @@ with col1:
         current_image = Image.open(current_path)
         st.image(current_image, caption="現在の画像", width=200)
 
-    uploaded_file = st.file_uploader(
-        "画像をアップロード（デフォルト画像も利用可能）",
-        type=["png", "jpg", "jpeg"],
-        key="image_upload_secure",
-    )
-    if uploaded_file is not None:
-        # セキュアなファイル保存
-        try:
-            secure_file_path = security_manager.get_secure_file_path(uploaded_file.name)
-            with open(secure_file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            isolated_state.set_uploaded_image_path(secure_file_path)
-            st.success("✅ 画像が安全にアップロードされました")
-            st.rerun()
-        except Exception:
-            logger.exception("画像アップロードエラー")
-            st.error("❌ 画像のアップロードに失敗しました。もう一度お試しください。")
+    # デモモード中は画像アップロードを無効化
+    if st.session_state.demo_mode:
+        st.info("📺 デモモード: デフォルト画像を使用します")
+    else:
+        uploaded_file = st.file_uploader(
+            "画像をアップロード（デフォルト画像も利用可能）",
+            type=["png", "jpg", "jpeg"],
+            key="image_upload_secure",
+        )
+        if uploaded_file is not None:
+            # セキュアなファイル保存
+            try:
+                secure_file_path = security_manager.get_secure_file_path(
+                    uploaded_file.name
+                )
+                with open(secure_file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                isolated_state.set_uploaded_image_path(secure_file_path)
+                st.success("✅ 画像が安全にアップロードされました")
+                st.rerun()
+            except Exception:
+                logger.exception("画像アップロードエラー")
+                st.error(
+                    "❌ 画像のアップロードに失敗しました。もう一度お試しください。"
+                )
 
-# 中央カラム（ステップ3）
+# 中央カラム（ステップ2）
 with col2:
-    # ステップ3: 正常品条件設定
-    step3_status = get_step_status(
-        3, bool(new_api_key), image_exists, conditions_valid, code_exists
+    # ステップ2: 正常品条件設定
+    step2_status = get_step_status(
+        3,
+        api_key or st.session_state.demo_mode,
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
-    <div class="step-container step-{step3_status}">
+    <div class="step-container step-{step2_status}">
         <div class="step-header">
-            <div class="step-number">3</div>
+            <div class="step-number">2</div>
             正常品条件設定
         </div>
     </div>
@@ -316,15 +372,23 @@ with col2:
     current_conditions = isolated_state.get_normal_conditions()
     updated_conditions = []
 
-    for i, condition in enumerate(current_conditions):
-        updated_condition = st.text_area(
-            f"条件 {i + 1}",
-            value=condition,
-            height=80,
-            placeholder="例: 画像に2つのリンゴがあること",
-            key=f"condition_secure_{i}",
-        )
-        updated_conditions.append(updated_condition)
+    # デモモード中は読み取り専用で明示的に表示
+    if st.session_state.demo_mode:
+        st.info("📺 デモモード: 以下のサンプル条件で動作します")
+        for i, condition in enumerate(current_conditions):
+            st.markdown(f"**条件 {i + 1}:**")
+            st.code(condition, language="text")
+            updated_conditions.append(condition)
+    else:
+        for i, condition in enumerate(current_conditions):
+            updated_condition = st.text_area(
+                f"条件 {i + 1}",
+                value=condition,
+                height=80,
+                placeholder="例: 画像に2つのリンゴがあること",
+                key=f"condition_secure_{i}",
+            )
+            updated_conditions.append(updated_condition)
 
     # 条件が変更された場合、セキュアストレージに保存
     if updated_conditions != current_conditions:
@@ -332,10 +396,15 @@ with col2:
         # 条件が変更されたら即座に再実行して状態を更新
         st.rerun()
 
-    # 条件の追加・削除（コンパクト）
+    # 条件の追加・削除（コンパクト）- デモモード中は無効
     col_add, col_remove = st.columns([1, 1])
     with col_add:
-        if st.button("➕ 追加", use_container_width=True, key="add_condition_secure"):
+        if st.button(
+            "➕ 追加",
+            use_container_width=True,
+            key="add_condition_secure",
+            disabled=st.session_state.demo_mode,
+        ):
             new_conditions = isolated_state.get_normal_conditions()
             new_conditions.append("")
             isolated_state.set_normal_conditions(new_conditions)
@@ -343,7 +412,10 @@ with col2:
     with col_remove:
         if (
             st.button(
-                "➖ 削除", use_container_width=True, key="remove_condition_secure"
+                "➖ 削除",
+                use_container_width=True,
+                key="remove_condition_secure",
+                disabled=st.session_state.demo_mode,
             )
             and len(isolated_state.get_normal_conditions()) > 1
         ):
@@ -360,13 +432,17 @@ with col3:
     # 生成済みコードを取得
     current_generated_code = isolated_state.get_generated_code()
 
-    # ステップ4: プログラム生成
-    step4_status = get_step_status(
-        4, bool(new_api_key), image_exists, conditions_valid, code_exists
+    # ステップ3: プログラム生成
+    step3_status = get_step_status(
+        4,
+        bool(api_key or st.session_state.demo_mode),
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
-    <div class="step-container step-{step4_status}">
+    <div class="step-container step-{step3_status}">
         <div class="step-header">
             <div class="step-number">4</div>
             プログラム生成
@@ -379,43 +455,70 @@ with col3:
     generate_button = st.button(
         "🚀 プログラム生成",
         type="primary",
-        disabled=not (new_api_key and conditions_valid),
+        disabled=not ((api_key or st.session_state.demo_mode) and conditions_valid),
         use_container_width=True,
     )
 
     # 生成処理（ボタン直下で実行）
     if generate_button and conditions_valid:
-        combined_conditions = "\n".join(
-            [f"- {condition.strip()}" for condition in valid_conditions]
-        )
-
-        with st.spinner("🤖 AIがプログラムを生成中..."):
-            try:
-                # セキュアなAPIキー取得
-                secure_api_key = security_manager.get_api_key()
-                if not secure_api_key:
-                    st.error("❌ APIキーが設定されていません")
-                else:
-                    generated_code = generate_anomaly_detection_code(
-                        combined_conditions, secure_api_key
-                    )
-                    isolated_state.set_generated_code(generated_code)
-                    st.success("✅ プログラム生成完了！")
+        # デモモード: 事前生成コードを使用
+        if st.session_state.demo_mode:
+            with st.spinner("🎬 デモコードを読み込み中..."):
+                try:
+                    demo_code = get_demo_generated_code()
+                    isolated_state.set_generated_code(demo_code)
+                    st.success("✅ デモコードを読み込みました")
                     st.rerun()
-            except ValueError as e:
-                st.warning(f"⚠️ 入力エラー: {str(e)}")
-            except Exception:
-                logger.exception("コード生成中にエラーが発生")
-                st.error(
-                    "❌ コード生成に失敗しました。時間をおいて再試行してください。"
-                )
+                except Exception as e:
+                    st.error(f"❌ デモコード読み込みエラー: {e}")
+        # 通常モード: API呼び出し
+        else:
+            combined_conditions = "\n".join(
+                [f"- {condition.strip()}" for condition in valid_conditions]
+            )
 
-    # 生成されたコードをボタン直下に表示
+            with st.spinner("🤖 AIがプログラムを生成中..."):
+                try:
+                    # セキュアなAPIキー取得
+                    secure_api_key = security_manager.get_api_key()
+                    if not secure_api_key:
+                        st.error("❌ APIキーが設定されていません")
+                    else:
+                        generated_code = generate_anomaly_detection_code(
+                            combined_conditions, secure_api_key
+                        )
+                        isolated_state.set_generated_code(generated_code)
+                        st.success("✅ プログラム生成完了！")
+                        st.rerun()
+                except ValueError as e:
+                    st.warning(f"⚠️ 入力エラー: {str(e)}")
+                except Exception:
+                    logger.exception("コード生成中にエラーが発生")
+                    st.error(
+                        "❌ コード生成に失敗しました。時間をおいて再試行してください。"
+                    )
+
+    # 生成されたコードをボタン直下に表示（execute_command関数のみ）
     if current_generated_code:
         st.markdown("##### 📝 生成されたコード")
+
+        # execute_command関数のみを抽出
+        import re
+
+        execute_command_match = re.search(
+            r"(def execute_command\([^)]*\):.*?)(?=\n(?:def |class |\Z))",
+            current_generated_code,
+            re.DOTALL,
+        )
+
+        if execute_command_match:
+            display_code = execute_command_match.group(1).rstrip()
+        else:
+            display_code = current_generated_code
+
         with st.expander("コードを表示", expanded=True):
             st.code(
-                current_generated_code,
+                display_code,
                 language="python",
                 line_numbers=True,
             )
@@ -429,15 +532,19 @@ with col3:
             key="download_code_inline",
         )
 
-    # ステップ5: プログラム実行
-    step5_status = get_step_status(
-        5, bool(new_api_key), image_exists, conditions_valid, code_exists
+    # ステップ4: プログラム実行
+    step4_status = get_step_status(
+        5,
+        bool(api_key or st.session_state.demo_mode),
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
-    <div class="step-container step-{step5_status}">
+    <div class="step-container step-{step4_status}">
         <div class="step-header">
-            <div class="step-number">5</div>
+            <div class="step-number">4</div>
             プログラム実行
         </div>
     </div>
@@ -472,81 +579,70 @@ if execute_button and current_code:
     st.rerun()
 
 if execute_requested and current_code:
-    with st.spinner("▶️ プログラムを実行中..."):
-        try:
-            # セキュアな画像パス取得
-            image_path = isolated_state.get_uploaded_image_path()
-            if not image_path or not os.path.exists(image_path):
-                default_image_path = os.path.join(
-                    os.path.dirname(__file__), "utils", "apple_strawberry.png"
-                )
-                if os.path.exists(default_image_path):
-                    image_path = default_image_path
-                else:
-                    st.error("画像が見つかりません。")
-                    st.stop()
+    with col3:
+        # デモモード: 事前実行結果を使用
+        if st.session_state.demo_mode:
+            with st.spinner("🎬 デモ実行結果を読み込み中..."):
+                try:
+                    demo_result = get_demo_execution_result()
+                    isolated_state.set_execution_result(demo_result)
+                    st.success("✅ デモ実行完了！")
+                    isolated_state.set_execute_requested(False)
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"❌ デモ実行結果読み込みエラー: {e}")
+                    isolated_state.set_execute_requested(False)
+        # 通常モード: 実際に実行
+        else:
+            with st.spinner("▶️ プログラムを実行中..."):
+                try:
+                    # セキュアな画像パス取得
+                    image_path = isolated_state.get_uploaded_image_path()
+                    if not image_path or not os.path.exists(image_path):
+                        default_image_path = os.path.join(
+                            os.path.dirname(__file__), "utils", "apple_strawberry.png"
+                        )
+                        if os.path.exists(default_image_path):
+                            image_path = default_image_path
+                        else:
+                            st.error("画像が見つかりません。")
+                            st.stop()
 
-            execution_result = execute_code(
-                current_code,
-                image_path,
-                isolated_state.get_box_threshold(),
-            )
-            isolated_state.set_execution_result(execution_result)
-            st.success("✅ 実行完了！")
-            isolated_state.set_execute_requested(False)
-            st.rerun()
-        except Exception:
-            logger.exception("実行中にエラーが発生")
-            st.error(
-                "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
-            )
-            isolated_state.set_execute_requested(False)
+                    execution_result = execute_code(
+                        current_code,
+                        image_path,
+                        isolated_state.get_box_threshold(),
+                    )
+                    isolated_state.set_execution_result(execution_result)
+                    st.success("✅ 実行完了！")
+                    isolated_state.set_execute_requested(False)
+                    st.rerun()
+                except Exception:
+                    logger.exception("実行中にエラーが発生")
+                    st.error(
+                        "❌ 実行中にエラーが発生しました。設定を見直して再試行してください。"
+                    )
+                    isolated_state.set_execute_requested(False)
 
-# 結果表示エリア（画面下部）- セキュア版
-current_generated_code = isolated_state.get_generated_code()
-current_execution_result = isolated_state.get_execution_result()
+# 実行結果表示 - 実行ボタンの直下に表示
+with col3:
+    current_execution_result = isolated_state.get_execution_result()
+    if current_execution_result:
+        st.markdown("#### 📊 実行結果")
+        result = current_execution_result
 
-if current_generated_code or current_execution_result:
-    st.markdown("---")
-    result_col1, result_col2 = st.columns(2)
+        if "status" in result:
+            if result["status"] == "success":
+                st.success(f"🎉 正常: {result.get('message', '異常なし')}")
+            elif result["status"] == "failure":
+                st.warning(f"⚠️ 異常: {result.get('message', '異常検出')}")
+            else:
+                st.error(f"❌ エラー: {result.get('message', 'システムエラー')}")
 
-    with result_col1:
-        if current_generated_code:
-            st.subheader("📝 生成されたコード")
-            with st.expander("コードを表示", expanded=False):
-                st.code(
-                    current_generated_code,
-                    language="python",
-                    line_numbers=True,
-                )
-
-            st.download_button(
-                label="📥 コードをダウンロード",
-                data=current_generated_code,
-                file_name="generated_program.py",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_code_secure",
-            )
-
-    with result_col2:
-        if current_execution_result:
-            st.subheader("📊 実行結果")
-            result = current_execution_result
-
-            if "status" in result:
-                if result["status"] == "success":
-                    st.success(f"🎉 正常: {result.get('message', '異常なし')}")
-                elif result["status"] == "failure":
-                    st.warning(f"⚠️ 異常: {result.get('message', '異常検出')}")
-                else:
-                    st.error(f"❌ エラー: {result.get('message', 'システムエラー')}")
-
-            if "output_text" in result and result["output_text"]:
-                with st.expander("詳細出力", expanded=False):
-                    st.code(result["output_text"], language="text")
+        if "output_text" in result and result["output_text"]:
+            with st.expander("詳細出力", expanded=True):
+                st.code(result["output_text"], language="text")
 
 # フッター
-if not (current_generated_code or current_execution_result):
-    st.markdown("---")
-    st.markdown("💡 **使い方**: 上記の1〜5のステップを順番に進めてください")
+st.markdown("---")
+st.markdown("💡 **使い方**: 上記のステップを順番に進めてください")
