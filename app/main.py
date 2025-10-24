@@ -8,6 +8,10 @@ from PIL import Image
 from security import IsolatedSessionState, SecureSessionManager
 from utils.code_executor import check_memory_usage, execute_code
 from utils.code_generator import generate_anomaly_detection_code
+from utils.demo_data import (
+    get_demo_condition,
+    is_demo_mode_available,
+)
 
 # ページ設定
 st.set_page_config(
@@ -143,7 +147,77 @@ security_manager, isolated_state = initialize_security_components()
 
 # タイトル
 st.title("🤖 AI異常検知プログラム生成")
-st.markdown("**5つのステップで簡単に異常検知プログラムを生成・実行**")
+st.markdown("**簡単なステップで異常検知プログラムを生成・実行**")
+
+# デモモードの初期化
+if "demo_mode" not in st.session_state:
+    st.session_state.demo_mode = False
+
+# Step 0: API設定（2カラムレイアウト）
+st.markdown("### 📝 Step 0: API設定")
+
+col_api, col_demo = st.columns([2, 1])
+
+with col_api:
+    st.markdown("**🔑 APIキーを使用**")
+
+    # デモモード中はAPIキー入力を無効化
+    api_key_input = st.text_input(
+        "Anthropic API Key",
+        type="password",
+        placeholder="sk-ant-...",
+        help="APIキーを入力すると、独自の条件でプログラムを生成できます",
+        disabled=st.session_state.demo_mode,
+        key="api_key_input_step0",
+    )
+
+    if api_key_input and not st.session_state.demo_mode:
+        if security_manager.set_api_key(api_key_input):
+            st.success("✅ APIキーが安全に設定されました")
+        else:
+            st.error("❌ APIキーの保存に失敗しました")
+    elif not st.session_state.demo_mode and not api_key_input:
+        st.info("🔒 APIキーはセッション内でのみ暗号化保存されます")
+
+with col_demo:
+    st.markdown("**🎬 デモモード**")
+    st.caption("APIキー不要で体験可能")
+
+    # デモモードの利用可能性チェック
+    demo_available, demo_error = is_demo_mode_available()
+
+    if not st.session_state.demo_mode:
+        if st.button(
+            "デモモードで試す",
+            use_container_width=True,
+            type="primary",
+            disabled=not demo_available,
+        ):
+            st.session_state.demo_mode = True
+            # デモモードのデフォルト値を設定
+            isolated_state.set_normal_conditions([get_demo_condition()])
+            st.rerun()
+
+        if not demo_available:
+            st.error(f"❌ {demo_error}")
+    else:
+        st.success("✅ デモモード実行中")
+        if st.button("通常モードに戻る", use_container_width=True):
+            st.session_state.demo_mode = False
+            # デモモード関連の状態をクリア
+            isolated_state.set_generated_code(None)
+            isolated_state.set_execution_result(None)
+            isolated_state.set_normal_conditions([])
+            st.rerun()
+
+# デモモード中の情報表示
+if st.session_state.demo_mode:
+    st.info(
+        "📺 **デモモード**: 事前に用意されたサンプルで機能を体験できます。"
+        "実際に使用するにはAnthropic APIキーが必要です。"
+    )
+
+st.markdown("---")
 
 
 # メモリ使用状況の表示
@@ -216,53 +290,21 @@ valid_conditions = [c.strip() for c in normal_conditions if c.strip()]
 conditions_valid = len(valid_conditions) > 0
 code_exists = bool(isolated_state.get_generated_code())
 
-# 左カラム（ステップ1-3）
+# 左カラム（ステップ1-2）
 with col1:
-    # ステップ1: APIキー設定
+    # ステップ1: 画像選択
     step1_status = get_step_status(
-        1, api_key, image_exists, conditions_valid, code_exists
+        2,
+        api_key or st.session_state.demo_mode,
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
     <div class="step-container step-{step1_status}">
         <div class="step-header">
             <div class="step-number">1</div>
-            APIキー設定
-        </div>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
-
-    new_api_key = st.text_input(
-        "Anthropic APIキーを入力",
-        type="password",
-        value=api_key,
-        key="api_input_secure",
-    )
-    if new_api_key != api_key:
-        # セキュアなAPIキー保存（環境変数は使用しない）
-        if security_manager.set_api_key(new_api_key):
-            st.success("🔐 APIキーが安全に保存されました")
-            st.rerun()
-        else:
-            st.error("❌ APIキーの保存に失敗しました")
-
-    if not new_api_key:
-        st.warning("⚠️ APIキーを入力してください")
-        st.info("🔒 APIキーはセッション内でのみ暗号化保存されます")
-    else:
-        st.success("✅ APIキーが安全に設定されました")
-
-    # ステップ2: 画像選択
-    step2_status = get_step_status(
-        2, bool(new_api_key), image_exists, conditions_valid, code_exists
-    )
-    st.markdown(
-        f"""
-    <div class="step-container step-{step2_status}">
-        <div class="step-header">
-            <div class="step-number">2</div>
             画像選択
         </div>
     </div>
@@ -276,35 +318,47 @@ with col1:
         current_image = Image.open(current_path)
         st.image(current_image, caption="現在の画像", width=200)
 
-    uploaded_file = st.file_uploader(
-        "画像をアップロード（デフォルト画像も利用可能）",
-        type=["png", "jpg", "jpeg"],
-        key="image_upload_secure",
-    )
-    if uploaded_file is not None:
-        # セキュアなファイル保存
-        try:
-            secure_file_path = security_manager.get_secure_file_path(uploaded_file.name)
-            with open(secure_file_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-            isolated_state.set_uploaded_image_path(secure_file_path)
-            st.success("✅ 画像が安全にアップロードされました")
-            st.rerun()
-        except Exception:
-            logger.exception("画像アップロードエラー")
-            st.error("❌ 画像のアップロードに失敗しました。もう一度お試しください。")
+    # デモモード中は画像アップロードを無効化
+    if st.session_state.demo_mode:
+        st.info("📺 デモモード: デフォルト画像を使用します")
+    else:
+        uploaded_file = st.file_uploader(
+            "画像をアップロード（デフォルト画像も利用可能）",
+            type=["png", "jpg", "jpeg"],
+            key="image_upload_secure",
+        )
+        if uploaded_file is not None:
+            # セキュアなファイル保存
+            try:
+                secure_file_path = security_manager.get_secure_file_path(
+                    uploaded_file.name
+                )
+                with open(secure_file_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                isolated_state.set_uploaded_image_path(secure_file_path)
+                st.success("✅ 画像が安全にアップロードされました")
+                st.rerun()
+            except Exception:
+                logger.exception("画像アップロードエラー")
+                st.error(
+                    "❌ 画像のアップロードに失敗しました。もう一度お試しください。"
+                )
 
-# 中央カラム（ステップ3）
+# 中央カラム（ステップ2）
 with col2:
-    # ステップ3: 正常品条件設定
-    step3_status = get_step_status(
-        3, bool(new_api_key), image_exists, conditions_valid, code_exists
+    # ステップ2: 正常品条件設定
+    step2_status = get_step_status(
+        3,
+        api_key or st.session_state.demo_mode,
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
-    <div class="step-container step-{step3_status}">
+    <div class="step-container step-{step2_status}">
         <div class="step-header">
-            <div class="step-number">3</div>
+            <div class="step-number">2</div>
             正常品条件設定
         </div>
     </div>
@@ -316,6 +370,7 @@ with col2:
     current_conditions = isolated_state.get_normal_conditions()
     updated_conditions = []
 
+    # デモモード中は条件入力を無効化
     for i, condition in enumerate(current_conditions):
         updated_condition = st.text_area(
             f"条件 {i + 1}",
@@ -323,8 +378,12 @@ with col2:
             height=80,
             placeholder="例: 画像に2つのリンゴがあること",
             key=f"condition_secure_{i}",
+            disabled=st.session_state.demo_mode,
         )
         updated_conditions.append(updated_condition)
+
+    if st.session_state.demo_mode:
+        st.info("📺 デモモード: サンプル条件を使用します")
 
     # 条件が変更された場合、セキュアストレージに保存
     if updated_conditions != current_conditions:
@@ -360,13 +419,17 @@ with col3:
     # 生成済みコードを取得
     current_generated_code = isolated_state.get_generated_code()
 
-    # ステップ4: プログラム生成
-    step4_status = get_step_status(
-        4, bool(new_api_key), image_exists, conditions_valid, code_exists
+    # ステップ3: プログラム生成
+    step3_status = get_step_status(
+        4,
+        bool(api_key or st.session_state.demo_mode),
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
-    <div class="step-container step-{step4_status}">
+    <div class="step-container step-{step3_status}">
         <div class="step-header">
             <div class="step-number">4</div>
             プログラム生成
@@ -379,7 +442,7 @@ with col3:
     generate_button = st.button(
         "🚀 プログラム生成",
         type="primary",
-        disabled=not (new_api_key and conditions_valid),
+        disabled=not ((api_key or st.session_state.demo_mode) and conditions_valid),
         use_container_width=True,
     )
 
@@ -429,15 +492,19 @@ with col3:
             key="download_code_inline",
         )
 
-    # ステップ5: プログラム実行
-    step5_status = get_step_status(
-        5, bool(new_api_key), image_exists, conditions_valid, code_exists
+    # ステップ4: プログラム実行
+    step4_status = get_step_status(
+        5,
+        bool(api_key or st.session_state.demo_mode),
+        image_exists,
+        conditions_valid,
+        code_exists,
     )
     st.markdown(
         f"""
-    <div class="step-container step-{step5_status}">
+    <div class="step-container step-{step4_status}">
         <div class="step-header">
-            <div class="step-number">5</div>
+            <div class="step-number">4</div>
             プログラム実行
         </div>
     </div>
