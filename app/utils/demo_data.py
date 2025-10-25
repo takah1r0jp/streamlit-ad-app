@@ -15,17 +15,28 @@ def _get_app_root() -> Path:
 
     ローカル環境とデプロイ環境の両方で正しく動作するように、
     app/utils/demo_data.py からルートを探索する
+
+    Returns:
+        app/ ディレクトリを指すPathオブジェクト
+        (demo/, utils/ などのサブディレクトリを含むディレクトリ)
     """
     current_file = Path(__file__).resolve()
     # __file__ は app/utils/demo_data.py なので、2つ上に移動して app/ を取得
     app_dir = current_file.parent.parent
 
-    # デプロイ環境の特殊ケース: /app/app/utils/demo_data.py の場合
-    # app/ が2回続く場合は1つ上のディレクトリを使用
-    if app_dir.name == "app" and app_dir.parent.name == "app":
-        return app_dir.parent
+    # app/ ディレクトリには demo/ と utils/ が存在するはず
+    # この確認により、正しい app/ ディレクトリを特定
+    if (app_dir / "demo").exists() and (app_dir / "utils").exists():
+        return app_dir
 
-    return app_dir
+    # デプロイ環境などで予期しない構造の場合はエラー
+    raise FileNotFoundError(
+        f"app/ ディレクトリの構造が正しくありません。\n"
+        f"現在のファイル: {current_file}\n"
+        f"検出された app_dir: {app_dir}\n"
+        f"demo/ 存在: {(app_dir / 'demo').exists()}\n"
+        f"utils/ 存在: {(app_dir / 'utils').exists()}"
+    )
 
 
 # デモモードの定数
